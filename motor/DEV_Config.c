@@ -173,7 +173,7 @@ void DEV_I2C_Init(uint8_t Add)
 
 void I2C_Write_Byte(uint8_t Cmd, uint8_t value)
 {
-    int ref;
+//    int ref;
 #if DEV_I2C
 #ifdef USE_BCM2835_LIB
     char wbuf[2] = {Cmd, value};
@@ -189,7 +189,7 @@ int I2C_Read_Byte(uint8_t Cmd)
 #if DEV_I2C
 #ifdef USE_BCM2835_LIB
     char rbuf[2] = {0};
-    bcm2835_i2c_read_register_rs(&Cmd, rbuf, 1);
+    bcm2835_i2c_read_register_rs((char *)&Cmd, (char *)rbuf, 1);
     ref = rbuf[0];
 
 #endif
@@ -203,7 +203,7 @@ int I2C_Read_Word(uint8_t Cmd)
 #if DEV_I2C
 #ifdef USE_BCM2835_LIB
     char rbuf[2] = {0};
-    bcm2835_i2c_read_register_rs(&Cmd, rbuf, 2);
+    bcm2835_i2c_read_register_rs((char *)&Cmd, (char *)rbuf, 2);
     ref = rbuf[1] << 8 | rbuf[0];
 
 #endif

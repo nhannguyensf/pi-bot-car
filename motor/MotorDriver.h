@@ -25,7 +25,12 @@
 #define AIN1 PCA_CHANNEL_1 // GPIO channel for direction control AIN1
 #define AIN2 PCA_CHANNEL_2 // GPIO channel for direction control AIN2
 
-#define MOTORA 0 // Defining Motor A identifier
+#define PWMB PCA_CHANNEL_5
+#define BIN1 PCA_CHANNEL_3
+#define BIN2 PCA_CHANNEL_4
+
+#define MOTORA 0
+#define MOTORB 1          // Defining Motor A identifier
 
 // Enumeration to represent motor direction
 typedef enum
@@ -35,6 +40,6 @@ typedef enum
 } DIR;
 
 // Function prototype for motor operation
-void Motor_Run(DIR dir, UWORD speed);
+void Motor_Run(UBYTE motor, DIR dir, UWORD speed);
 
 #endif

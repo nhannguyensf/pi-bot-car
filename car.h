@@ -20,9 +20,9 @@
 #include <signal.h>
 
 // Including custom configurations and motor control headers
-#include "DEV_Config.h"
+#include "motor/DEV_Config.h"
 #include <time.h>
-#include "DEV_Config.h"
-#include "MotorDriver.h"
+#include "motor/DEV_Config.h"
+#include "motor/MotorDriver.h"
 
 #endif

@@ -1,37 +1,30 @@
-DIR_BIN = ./bin
-DIR_Config = ./
-DIR_MotorDriver = ./
-DIR_PCA9685 = ./
-
-OBJ_C = $(wildcard *.c)
-OBJ_O = $(patsubst %.c,${DIR_BIN}/%.o,$(notdir ${OBJ_C}))
-
-TARGET = assignment3
-
 CC = gcc
+CFLAGS = -Wall -O2 -DUSE_BCM2835_LIB
+LDFLAGS = -lm -lpthread -lpigpio -lbcm2835 -lrt
 
-DEBUG = -g -O0 -Wall
-CFLAGS += $(DEBUG)
+SRC = \
+	motor/DEV_Config.c \
+	motor/MotorDriver.c \
+	motor/PCA9685.c \
+	car.c
 
-USELIB = USE_BCM2835_LIB
-DEBUG = -D $(USELIB)
-ifeq ($(USELIB), USE_BCM2835_LIB)
-    LIB = -lbcm2835 -lm
-endif
+OBJ = $(SRC:.c=.o)
 
-${TARGET}:${OBJ_O}
-	$(CC) $(CFLAGS) $(OBJ_O) -o $@ $(LIB)
+INCLUDES = \
+	-I./motor
 
-${DIR_BIN}/%.o : %.c
-	$(CC) $(CFLAGS) -c  $< -o $@ $(LIB) -I $(DIR_Config) -I $(DIR_MotorDriver) -I $(DIR_PCA9685)
+LIBS = \
+	-lbcm2835 -lm -lpthread -lpigpio -lrt
 
-mkdir:
-	@mkdir -p $(DIR_BIN)
+TARGET = car
 
-run: ${TARGET}
-	./${TARGET}
-	
-.PHONY: clean
-clean :
-	rm -f $(DIR_BIN)/*.o 
-	rm -f $(TARGET)
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	rm -f $(OBJ) $(TARGET)
