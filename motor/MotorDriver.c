@@ -1,18 +1,3 @@
-/************************************************************** *
- * Class:: CSC-615-01 Fall 2024
- * Name:: Yuvraj Gupta
- * Student ID:: 922933190
- * Github-Name:: YuvrajGupta1808
- * Project: Assignment 3 - Start Your Motors
- * File: MotorDriver.c
- *
- * Description::
- * Measures distance using the HC-SR04 ultrasonic sensor and
- * controls GPIO pins using PiGPIO library. The program
- * calculates the distance by sending ultrasonic pulses and
- * reading the echo, converting the duration into a distance
- * value in centimeters.
- * **************************************************************/
 #include "MotorDriver.h"
 #include "Debug.h"
 
@@ -26,47 +11,62 @@
  * @code
  * Motor_Run(FORWARD, 50);
  */
+
+void Motor_Init(void)
+{
+    PCA9685_Init(0x40);
+    PCA9685_SetPWMFreq(100);
+}
+
 void Motor_Run(UBYTE motor, DIR dir, UWORD speed)
 {
-    DEBUG("Motor A Speed = %d\r\n", speed);
+    if (speed > 100)
+        speed = 100;
 
-    // Setting PWM duty cycle to control motor speed
-    PCA9685_SetPwmDutyCycle(PWMA, speed);
-
-    if (motor == MOTORA){
-    // Configuring motor direction based on input parameter
-    if (dir == FORWARD)
+    if (motor == MOTORA)
     {
-        DEBUG("forward...\r\n");
-        PCA9685_SetLevel(AIN1, 0); // Setting AIN1 to low for forward direction
-        PCA9685_SetLevel(AIN2, 1); // Setting AIN2 to high for forward direction
-
-        DEBUG("Setting Motor A: AIN1 = %d, AIN2 = %d\r\n", 0, 1); // For forward
+        DEBUG("Motor A Speed = %d\r\n", speed);
+        PCA9685_SetPwmDutyCycle(PWMA, speed);
+        if (dir == FORWARD)
+        {
+            DEBUG("forward...\r\n");
+            PCA9685_SetLevel(AIN1, 0);
+            PCA9685_SetLevel(AIN2, 1);
+        }
+        else
+        {
+            DEBUG("backward...\r\n");
+            PCA9685_SetLevel(AIN1, 1);
+            PCA9685_SetLevel(AIN2, 0);
+        }
     }
     else
     {
-        DEBUG("backward...\r\n");
-        PCA9685_SetLevel(AIN1, 1); // Setting AIN1 to high for backward direction
-        PCA9685_SetLevel(AIN2, 0); // Setting AIN2 to low for backward direction
-
-        DEBUG("Setting Motor A: AIN1 = %d, AIN2 = %d\r\n", 1, 0); // For backward
+        DEBUG("Motor B Speed = %d\r\n", speed);
+        PCA9685_SetPwmDutyCycle(PWMB, speed);
+        if (dir == FORWARD)
+        {
+            DEBUG("forward...\r\n");
+            PCA9685_SetLevel(BIN1, 0);
+            PCA9685_SetLevel(BIN2, 1);
+        }
+        else
+        {
+            DEBUG("backward...\r\n");
+            PCA9685_SetLevel(BIN1, 1);
+            PCA9685_SetLevel(BIN2, 0);
+        }
     }
-} else {
-    if (dir == FORWARD)
-    {
-        DEBUG("forward...\r\n");
-        PCA9685_SetLevel(AIN1, 0); // Setting AIN1 to low for forward direction
-        PCA9685_SetLevel(AIN2, 1); // Setting AIN2 to high for forward direction
+}
 
-        DEBUG("Setting Motor A: AIN1 = %d, AIN2 = %d\r\n", 0, 1); // For forward
+void Motor_Stop(UBYTE motor)
+{
+    if (motor == MOTORA)
+    {
+        PCA9685_SetPwmDutyCycle(PWMA, 0);
     }
     else
     {
-        DEBUG("backward...\r\n");
-        PCA9685_SetLevel(AIN1, 1); // Setting AIN1 to high for backward directi>
-        PCA9685_SetLevel(AIN2, 0); // Setting AIN2 to low for backward direction
-
-        DEBUG("Setting Motor A: AIN1 = %d, AIN2 = %d\r\n", 1, 0); // For backwa>
+        PCA9685_SetPwmDutyCycle(PWMB, 0);
     }
- }
 }

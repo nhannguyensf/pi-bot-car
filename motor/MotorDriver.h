@@ -1,18 +1,3 @@
-/************************************************************** *
- * Class:: CSC-615-01 Fall 2024
- * Name:: Yuvraj Gupta
- * Student ID:: 922933190
- * Github-Name:: YuvrajGupta1808
- * Project: Assignment 3 - Start Your Motors
- * File: MotorDriver.h
- *
- * Description::
- * Header file for controlling a DC motor using the WaveShare
- * Motor Driver HAT on a Raspberry Pi. Defines constants and
- * function prototypes for motor direction and speed control
- * using PWM. This header also includes necessary dependencies
- * for motor control.
- * **************************************************************/
 #ifndef __TB6612FNG_
 #define __TB6612FNG_
 
@@ -30,7 +15,7 @@
 #define BIN2 PCA_CHANNEL_4
 
 #define MOTORA 0
-#define MOTORB 1          // Defining Motor A identifier
+#define MOTORB 1 // Defining Motor A identifier
 
 // Enumeration to represent motor direction
 typedef enum
@@ -40,6 +25,8 @@ typedef enum
 } DIR;
 
 // Function prototype for motor operation
+void Motor_Init(void);
 void Motor_Run(UBYTE motor, DIR dir, UWORD speed);
+void Motor_Stop(UBYTE motor);
 
 #endif

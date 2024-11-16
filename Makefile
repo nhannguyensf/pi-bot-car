@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -O2 -DUSE_BCM2835_LIB
-LDFLAGS = -lm -lpthread -lpigpio -lbcm2835 -lrt
+LDFLAGS = -lpigpio -lpthread -lbcm2835 -lm -lrt
 
 SRC = \
 	motor/DEV_Config.c \
