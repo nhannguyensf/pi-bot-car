@@ -6,6 +6,8 @@ SRC = \
 	motor/DEV_Config.c \
 	motor/MotorDriver.c \
 	motor/PCA9685.c \
+    ls7336r.c \
+	motor.c \
 	car.c
 
 OBJ = $(SRC:.c=.o)
@@ -28,3 +30,6 @@ $(TARGET): $(OBJ)
 
 clean:
 	rm -f $(OBJ) $(TARGET)
+
+ls7336r: ls7336r.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o ls7336r ls7336r.c $(LDFLAGS)
