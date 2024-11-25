@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pigpio.h>
-#include "motor/DEV_Config.h"
-#include "motor/MotorDriver.h"
+#include "../motor/DEV_Config.h"
+#include "../motor/MotorDriver.h"
 
 
 void initializeMotorSystem() {
