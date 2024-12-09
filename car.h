@@ -7,9 +7,16 @@
 #include <signal.h>
 
 // Including custom configurations and motor control headers
-#include "motor/DEV_Config.h"
 #include <time.h>
+#include "motor/DEV_Config.h"
 #include "motor/PCA9685.h"
 #include "motor/MotorDriver.h"
+
+// Including motor-related headers
+#include "motor/DEV_Config.h"
+#include "motor/PCA9685.h"
+#include "motor/MotorDriver.h"
+#include "encoder/ls7336r.h"
+#include "encoder/motor.h"
 
 #endif

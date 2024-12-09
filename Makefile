@@ -6,30 +6,44 @@ SRC = \
 	motor/DEV_Config.c \
 	motor/MotorDriver.c \
 	motor/PCA9685.c \
-    ls7336r.c \
-	motor.c \
+    encoder/ls7336r.c \
+    encoder/motor.c \
 	car.c
 
-OBJ = $(SRC:.c=.o)
+BIN_DIR = bin
+OBJ = $(SRC:%.c=$(BIN_DIR)/%.o)
 
 INCLUDES = \
-	-I./motor
+    -I./motor \
+    -I./encoder
 
 LIBS = \
 	-lbcm2835 -lm -lpthread -lpigpio -lrt
 
 TARGET = car
 
-all: $(TARGET)
+all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(TARGET)
+
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
+
+$(BIN_DIR)/motor:
+	mkdir -p $(BIN_DIR)/motor
+
+$(BIN_DIR)/encoder:
+	mkdir -p $(BIN_DIR)/encoder
 
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
 
-%.o: %.c
+$(BIN_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET)
 
-ls7336r: ls7336r.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o ls7336r ls7336r.c $(LDFLAGS)
+ls7336r: encoder/ls7336r.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ encoder/ls7336r.c $(LDFLAGS)
+
+run:
+	sudo ./car

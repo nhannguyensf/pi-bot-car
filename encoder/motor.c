@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pigpio.h>
-#include "motor/DEV_Config.h"
-#include "motor/MotorDriver.h"
+#include "../motor/DEV_Config.h"
+#include "../motor/MotorDriver.h"
 
 
 void initializeMotorSystem() {
@@ -37,7 +37,11 @@ void readEncoder(int cePin, int* lastCount, const char* motorName) {
 
     int result = readLS7336RCounter(cePin);
 
-   // Log raw data
+    if(result<0){
+        result = result - 2*result;
+    }
+
+    // Log raw data
     printf("Raw data from %s encoder: %08X\n", motorName, result);
 
     // Calculate delta, including negative values for backward motion
