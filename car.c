@@ -19,23 +19,28 @@ void Handler(int signo)
     // System Exit
     printf("\r\nHandler: Motor Stop\r\n");
     stop = 1;
-    stopMotors();
-    DEV_ModuleExit();
-    exit(0);
 }
+
 
 int main(void) {
     initializeMotorSystem();
-    
+
+
+    // Initialize encoders
+    initializeEncoder(SPI0_CE0, "Motor A");
+    initializeEncoder(SPI0_CE1, "Motor B");
+
+    while(!stop) {
+        pid_control();
+    }
+
+
+    /*
     // Start motors
     printf("Running motors forward at 50%% speed\n");
     Motor_Run(MOTORA, 50);
     Motor_Run(MOTORB, 50);
 
-    // Initialize encoders
-    initializeEncoder(SPI0_CE0, "Motor A");
-    initializeEncoder(SPI0_CE1, "Motor B");
-    
 
     int lastCountA = 0, lastCountB = 0;
 
@@ -48,12 +53,10 @@ int main(void) {
         sleep(1); // 1-second interval
     }
     }
+     */
 
     // Stop motors and cleanup
-    stopMotors();
-    gpioTerminate();
-    DEV_ModuleExit();
-    printf("Program exited successfully.\n");
+
 
     return 0;
 }

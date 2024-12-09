@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include "../motor/MotorDriver.h"
-#include "../line_sensor.h"
+#include "../line-sensor/line_sensor.h"
 
 // PID constants
-#define KP 10.0  
-#define KI 0.1   
-#define KD 5.0   // Derivative gain
+#define KP 35.5  
+#define KI 0  
+#define KD 0  // Derivative gain
 
 // Control limits
 #define MAX_CONTROL 100
@@ -82,4 +82,4 @@ void pid_control() {
     // Debug output
     printf("Error: %.2f, Control: %.2f, Left: %d, Right: %d\n", 
            error, control, left_speed, right_speed);
-}
+} 
