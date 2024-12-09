@@ -15,11 +15,20 @@
 void Motor_Init(void)
 {
     PCA9685_Init(0x40);
-    PCA9685_SetPWMFreq(100);
+    PCA9685_SetPWMFreq(200);
 }
 
-void Motor_Run(UBYTE motor, DIR dir, UWORD speed)
+void Motor_Run(UBYTE motor, UWORD speed)
 {
+    DIR dir;
+
+    if (speed < 0) {
+        dir = BACKWARD;
+        speed = -speed; 
+    } else {
+        dir = FORWARD;
+    }
+
     if (speed > 100)
         speed = 100;
 
@@ -30,14 +39,14 @@ void Motor_Run(UBYTE motor, DIR dir, UWORD speed)
         if (dir == FORWARD)
         {
             DEBUG("forward...\r\n");
-            PCA9685_SetLevel(AIN1, 1);
-            PCA9685_SetLevel(AIN2, 0);
+            PCA9685_SetLevel(AIN1, 0);
+            PCA9685_SetLevel(AIN2, 1);
         }
         else
         {
             DEBUG("backward...\r\n");
-            PCA9685_SetLevel(AIN1, 0);
-            PCA9685_SetLevel(AIN2, 1);
+            PCA9685_SetLevel(AIN1, 1);
+            PCA9685_SetLevel(AIN2, 0);
         }
     }
     else
@@ -47,14 +56,14 @@ void Motor_Run(UBYTE motor, DIR dir, UWORD speed)
         if (dir == FORWARD)
         {
             DEBUG("forward...\r\n");
-            PCA9685_SetLevel(BIN1, 1);
-            PCA9685_SetLevel(BIN2, 0);
+            PCA9685_SetLevel(BIN1, 0);
+            PCA9685_SetLevel(BIN2, 1);
         }
         else
         {
             DEBUG("backward...\r\n");
-            PCA9685_SetLevel(BIN1, 0);
-            PCA9685_SetLevel(BIN2, 1);
+            PCA9685_SetLevel(BIN1, 1);
+            PCA9685_SetLevel(BIN2, 0);
         }
     }
 }

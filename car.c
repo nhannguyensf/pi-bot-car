@@ -25,16 +25,12 @@ void Handler(int signo)
 }
 
 int main(void) {
-    initializeMotorSystem();
-
-    // Start motors
-    printf("Running motors forward at 50%% speed\n");
-    Motor_Run(MOTORA, FORWARD, 50);
-    Motor_Run(MOTORB, FORWARD, 50);
-
+    setup_init();
+    
     // Initialize encoders
     initializeEncoder(SPI0_CE0, "Motor A");
     initializeEncoder(SPI0_CE1, "Motor B");
+    
 
     int lastCountA = 0, lastCountB = 0;
 
@@ -47,6 +43,7 @@ int main(void) {
         sleep(1); // 1-second interval
     }
     }
+
     // Stop motors and cleanup
     stopMotors();
     gpioTerminate();
