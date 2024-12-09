@@ -25,8 +25,13 @@ void Handler(int signo)
 }
 
 int main(void) {
-    setup_init();
+    initializeMotorSystem();
     
+    // Start motors
+    printf("Running motors forward at 50%% speed\n");
+    Motor_Run(MOTORA, 50);
+    Motor_Run(MOTORB, 50);
+
     // Initialize encoders
     initializeEncoder(SPI0_CE0, "Motor A");
     initializeEncoder(SPI0_CE1, "Motor B");
