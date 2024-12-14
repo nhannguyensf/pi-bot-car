@@ -32,6 +32,22 @@ void pid_init() {
 }
 
 /**
+ * @brief Print debug information for PID computation.
+ * @param sensor_states Array of sensor states (1 or 0).
+ * @param error Current calculated error.
+ */
+void print_debug_info(int* sensor_states, float error) {
+    printf("Sensor States: ");
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        printf("%d ", sensor_states[i]);
+    }
+    printf("\n");
+
+    printf("PID Error: %.2f\n", error);
+    printf("Motor Speeds: Left: %d, Right: %d\n", motor_left_speed, motor_right_speed);
+}
+
+/**
  * @brief Compute PID output based on sensor states.
  * @param sensor_states Array of 5 sensor readings (1 or 0).
  * @return Calculated PID error.
@@ -72,6 +88,9 @@ float pid_compute(int* sensor_states) {
     // Update previous error for next iteration
     prev_error = error;
 
+    // Print debugging information
+    print_debug_info(sensor_states, pid_error);
+
     return pid_error;
 }
 
@@ -97,5 +116,6 @@ void adjust_motor_speed(float error) {
     Motor_Run(LEFT_MOTOR, motor_left_speed);
     Motor_Run(RIGHT_MOTOR, motor_right_speed);
 
-    printf("Left Motor Speed: %d, Right Motor Speed: %d\n", motor_left_speed, motor_right_speed);
+    // Print motor speed adjustments for debugging
+    printf("Adjusting Motors: Left Motor Speed: %d, Right Motor Speed: %d\n", motor_left_speed, motor_right_speed);
 }
