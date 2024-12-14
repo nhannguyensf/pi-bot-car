@@ -15,8 +15,8 @@
 #define BIN1 PCA_CHANNEL_3
 #define BIN2 PCA_CHANNEL_4
 
-#define MOTORA 0
-#define MOTORB 1  // Defining Motor A identifier
+#define LEFT_MOTOR 0
+#define RIGHT_MOTOR 1  // Defining Motor A identifier
 
 // Enumeration to represent motor direction
 typedef enum

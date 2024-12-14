@@ -46,7 +46,7 @@ void Motor_Run(UBYTE motor, UWORD speed)
     if (speed > 100)
         speed = 100;
 
-    if (motor == MOTORA)
+    if (motor == LEFT_MOTOR)
     {
         DEBUG("Motor A Speed = %d\r\n", speed);
         PCA9685_SetPwmDutyCycle(PWMA, speed);
@@ -84,7 +84,7 @@ void Motor_Run(UBYTE motor, UWORD speed)
 
 void Motor_Stop(UBYTE motor)
 {
-    if (motor == MOTORA)
+    if (motor == LEFT_MOTOR)
     {
         PCA9685_SetPwmDutyCycle(PWMA, 0);
     }
@@ -95,8 +95,8 @@ void Motor_Stop(UBYTE motor)
 }
 
 void Motor_Stop_All(void) {
-    Motor_Stop(MOTORA);
-    Motor_Stop(MOTORB);
+    Motor_Stop(LEFT_MOTOR);
+    Motor_Stop(RIGHT_MOTOR);
 
     gpioTerminate();
     DEV_ModuleExit();
