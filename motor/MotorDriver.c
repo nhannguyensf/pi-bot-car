@@ -12,10 +12,24 @@
  * Motor_Run(FORWARD, 50);
  */
 
+
 void Motor_Init(void)
-{
+{   
+    if (DEV_ModuleInit() != 0) {
+        fprintf(stderr, "Error: Failed to initialize system module\n");
+        exit(1);
+    }
+
+    if (gpioInitialise() < 0) {
+        fprintf(stderr, "Error: Failed to initialize pigpio\n");
+        exit(1);
+    }
+
     PCA9685_Init(0x40);
     PCA9685_SetPWMFreq(200);
+
+    printf("Motor system initialized successfully.\n");
+
 }
 
 void Motor_Run(UBYTE motor, UWORD speed)
@@ -78,4 +92,13 @@ void Motor_Stop(UBYTE motor)
     {
         PCA9685_SetPwmDutyCycle(PWMB, 0);
     }
+}
+
+void Motor_Stop_All(void) {
+    Motor_Stop(MOTORA);
+    Motor_Stop(MOTORB);
+
+    gpioTerminate();
+    DEV_ModuleExit();
+    printf("Motors stopped successfully.\n");
 }

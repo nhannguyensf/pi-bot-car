@@ -28,5 +28,6 @@ typedef enum
 void Motor_Init(void);
 void Motor_Run(UBYTE motor, UWORD speed);
 void Motor_Stop(UBYTE motor);
+void Motor_Stop_All(void);
 
 #endif

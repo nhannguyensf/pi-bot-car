@@ -7,8 +7,6 @@ SRC = \
     motor/DEV_Config.c \
     motor/MotorDriver.c \
     motor/PCA9685.c \
-    encoder/ls7336r.c \
-    encoder/motor.c \
     line-sensor/line_sensor.c \
     pid/pid.c \
     car.c
@@ -20,7 +18,6 @@ OBJ = $(SRC:%.c=$(BIN_DIR)/%.o)
 # Include directories
 INCLUDES = \
     -I./motor \
-    -I./encoder \
     -I./line-sensor \
     -I./pid
 
@@ -32,7 +29,7 @@ LIBS = \
 TARGET = car
 
 # Default target
-all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/pid $(TARGET)
+all: $(BIN_DIR)/motor $(BIN_DIR)/line-sensor $(BIN_DIR)/pid $(TARGET)
 
 # Create necessary directories
 $(BIN_DIR):
@@ -40,9 +37,6 @@ $(BIN_DIR):
 
 $(BIN_DIR)/motor:
 	mkdir -p $(BIN_DIR)/motor
-
-$(BIN_DIR)/encoder:
-	mkdir -p $(BIN_DIR)/encoder
 
 $(BIN_DIR)/line-sensor:
 	mkdir -p $(BIN_DIR)/line-sensor

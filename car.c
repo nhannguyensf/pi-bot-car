@@ -23,7 +23,7 @@ void Handler(int signo)
 
 
 int main(void) {
-    initializeMotorSystem();
+    Motor_Init();
     signal(SIGINT, handler);
 
     // Initialize encoders
@@ -57,9 +57,7 @@ int main(void) {
 
     // Stop motors and cleanup
 
-    stopMotors();
-    gpioTerminate();
-    DEV_ModuleExit();
+    Motor_Stop_All();
     printf("Program exited successfully.\n");
     return 0;
 }
