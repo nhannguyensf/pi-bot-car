@@ -37,5 +37,6 @@ extern int motor_right_speed;              // Speed for right motor
 void pid_init();                        // Initialize PID variables
 float pid_compute(int* sensor_states);  // Compute the PID output
 void adjust_motor_speed(float error);   // Adjust motor speeds based on PID error
+void print_debug_info(int* sensor_states, float error); // Print debug information
 
 #endif // PID_H
