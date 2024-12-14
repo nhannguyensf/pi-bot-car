@@ -57,6 +57,9 @@ int main(void) {
         // Compute the PID error based on sensor readings
         float error = pid_compute(sensor_states);
 
+        // Print debug information
+        print_debug_info(sensor_states, error);
+
         // Adjust motor speeds based on the PID error
         adjust_motor_speed(error);
 
