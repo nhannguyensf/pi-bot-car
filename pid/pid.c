@@ -1,85 +1,101 @@
+/**************************************************************
+* File    : pid.c
+* Purpose : Implements PID control for line tracking using 5 sensors.
+* Author  : Nhan Nguyen
+**************************************************************/
+
+#include "pid.h"
+#include "line_sensor.h" // To access line sensor states
+#include "MotorDriver.h" // To control motor speeds
 #include <stdio.h>
-#include "../motor/MotorDriver.h"
-#include "../line-sensor/line_sensor.h"
+#include <stdlib.h>
+#include <math.h>
 
-// PID constants
-#define KP 35.5  
-#define KI 0  
-#define KD 0  // Derivative gain
+// Shared variables
+int sensor_positions[NUM_SENSORS] = {-2, -1, 0, 1, 2}; // Positions of the 5 sensors
+float pid_error = 0;
+int motor_left_speed = 0;
+int motor_right_speed = 0;
 
-// Control limits
-#define MAX_CONTROL 100
-#define BASE_SPEED 50
+// Internal variables for PID calculation
+static float prev_error = 0; // Previous error for derivative term
+static float integral = 0;   // Integral term accumulator
 
-// Global variables for PID calculation
-static double last_error = 0;
-static double integral = 0;
-
-// Function to calculate weighted position from line sensors
-// Returns a value between -2 and 2, where:
-// -2 means far left, 0 means centered, 2 means far right
-double calculate_line_position(int* sensor_states) {
-    // Weights for each sensor from left to right
-    const double weights[] = {-2.0, -1.0, 0.0, 1.0, 2.0};
-    double weighted_sum = 0;
-    int active_sensors = 0;
-    
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        if (sensor_states[i]) {
-            weighted_sum += weights[i];
-            active_sensors++;
-        }
-    }
-    
-    // If no sensors are active, return the last known position
-    if (active_sensors == 0) {
-        return last_error;
-    }
-    
-    return weighted_sum / active_sensors;
+/**
+ * @brief Initialize PID variables.
+ */
+void pid_init() {
+    pid_error = 0;
+    prev_error = 0;
+    integral = 0;
+    printf("PID Control initialized.\n");
 }
 
-// Main PID control function
-void pid_control() {
-    int sensor_states[NUM_SENSORS];
-    read_line_sensors(sensor_states);
-    
-    // Calculate current position error
-    double error = calculate_line_position(sensor_states);
-    
-    // PID calculations
-    integral += error;
-    double derivative = error - last_error;
-    
-    // Anti-windup for integral term
-    if (integral > MAX_CONTROL) integral = MAX_CONTROL;
-    if (integral < -MAX_CONTROL) integral = -MAX_CONTROL;
-    
-    // Calculate control signal
-    double control = KP * error + KI * integral + KD * derivative;
-    
-    // Limit control signal
-    if (control > MAX_CONTROL) control = MAX_CONTROL;
-    if (control < -MAX_CONTROL) control = -MAX_CONTROL;
-    
-    // Apply control to motors
-    int left_speed = BASE_SPEED - control;
-    int right_speed = BASE_SPEED + control;
-    
-    // Ensure speeds are within bounds
-    if (left_speed > 100) left_speed = 100;
-    if (left_speed < -100) left_speed = -100;
-    if (right_speed > 100) right_speed = 100;
-    if (right_speed < -100) right_speed = -100;
-    
-    // Update motor speeds
-    Motor_Run(MOTORA, left_speed);  // Left motor
-    Motor_Run(MOTORB, right_speed); // Right motor
-    
-    // Update last error for next iteration
-    last_error = error;
-    
-    // Debug output
-    printf("Error: %.2f, Control: %.2f, Left: %d, Right: %d\n", 
-           error, control, left_speed, right_speed);
-} 
+/**
+ * @brief Compute PID output based on sensor states.
+ * @param sensor_states Array of 5 sensor readings (1 or 0).
+ * @return Calculated PID error.
+ */
+float pid_compute(int* sensor_states) {
+    int weighted_sum = 0;
+    int total_active_sensors = 0;
+
+    // Calculate weighted sum of active sensors
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (sensor_states[i] == 1) {
+            weighted_sum += sensor_positions[i];
+            total_active_sensors++;
+        }
+    }
+
+    // Check if no sensors are active (all 0)
+    if (total_active_sensors == 0) {
+        printf("No line detected. Stopping motors.\n");
+        motor_left_speed = 0;
+        motor_right_speed = 0;
+        return 0;
+    }
+
+    // Calculate the proportional error
+    float position = (float)weighted_sum / total_active_sensors;
+    float error = position; // Deviation from the center (0 position)
+
+    // PID terms
+    float proportional = KP * error;
+    integral += error; // Accumulate integral
+    float integral_term = KI * integral;
+    float derivative = KD * (error - prev_error);
+
+    // Update PID error
+    pid_error = proportional + integral_term + derivative;
+
+    // Update previous error for next iteration
+    prev_error = error;
+
+    return pid_error;
+}
+
+/**
+ * @brief Adjust motor speeds based on PID error.
+ * @param error Calculated PID error.
+ */
+void adjust_motor_speed(float error) {
+    // Base speed for motors
+    int base_speed = 50; // Adjust as per your system's requirement
+
+    // Calculate motor speeds
+    motor_left_speed = base_speed - error;
+    motor_right_speed = base_speed + error;
+
+    // Clamp motor speeds to valid range
+    if (motor_left_speed > MAX_SPEED) motor_left_speed = MAX_SPEED;
+    if (motor_left_speed < MIN_SPEED) motor_left_speed = MIN_SPEED;
+    if (motor_right_speed > MAX_SPEED) motor_right_speed = MAX_SPEED;
+    if (motor_right_speed < MIN_SPEED) motor_right_speed = MIN_SPEED;
+
+    // Set motor speeds
+    Motor_Run(LEFT_MOTOR, motor_left_speed);
+    Motor_Run(RIGHT_MOTOR, motor_right_speed);
+
+    printf("Left Motor Speed: %d, Right Motor Speed: %d\n", motor_left_speed, motor_right_speed);
+}
