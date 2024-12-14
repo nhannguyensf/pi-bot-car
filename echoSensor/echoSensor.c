@@ -16,11 +16,11 @@ typedef struct {
 
 // Array of sensor pins
 static const SensorPins sensorPins[NUM_SENSORS] = {
-    {14, 15, 0},  
-    {13, 21, 1},  
-    {6, 26, 2}, 
-    {5, 19, 3},    
-    {4, 25, 4}   
+    {4, 5, 0},  
+    {6, 13, 1},  
+    {26, 12, 2}, 
+    {7, 8, 3},    
+    {25, 16, 4}   
 };
 
 // Global variables
@@ -42,11 +42,16 @@ int initEchoSensors() {
         printf("pigpio initialization failed\n");
         return -1;
     }
+    printf("pigpio initialized successfully\n");
     
     // Initialize GPIO pins for all sensors
     for(int i = 0; i < NUM_SENSORS; i++) {
         gpioSetMode(sensorPins[i].echo, PI_INPUT);
         gpioSetMode(sensorPins[i].trig, PI_OUTPUT);
+        printf("Initialized Sensor %d: Trig=%d, Echo=%d\n", 
+               i, sensorPins[i].trig, sensorPins[i].echo);
+        // Ensure trigger is low
+        gpioWrite(sensorPins[i].trig, 0);
     }
     
     // Create threads for each sensor
@@ -89,6 +94,9 @@ void cleanupEchoSensors() {
 static double getDistance(const SensorPins* sensor) {
     int startTick, endTick;
     
+    printf("Sensor %d: Starting measurement (Trig=%d, Echo=%d)\n", 
+           sensor->sensorId, sensor->trig, sensor->echo);
+    
     //Send out a trigger signal
     gpioWrite(sensor->trig, 1);
     usleep(10);
@@ -100,7 +108,11 @@ static double getDistance(const SensorPins* sensor) {
         timeout++;
         usleep(1);
     }
-    if (timeout >= 30000) return -1;
+    if (timeout >= 30000) {
+        printf("Sensor %d: Echo pin never went high (timeout) - Check Echo pin %d connection\n", 
+               sensor->sensorId, sensor->echo);
+        return -1;
+    }
     
     //Calculate time
     startTick = gpioTick();
@@ -111,14 +123,19 @@ static double getDistance(const SensorPins* sensor) {
         timeout++;
         usleep(1);
     }
-    if (timeout >= 30000) return -1;
+    if (timeout >= 30000) {
+        printf("Sensor %d: Echo pin never went low (timeout)\n", sensor->sensorId);
+        return -1;
+    }
     
     //Calculate time
     endTick = gpioTick();
     int timeElapsed = endTick - startTick;
     
     //Calculate distance
-    double distance = (timeElapsed * 0.0343)/2.0;  
+    double distance = (timeElapsed * 0.0343)/2.0;
+    printf("Sensor %d: Time elapsed: %d microseconds, Distance: %.2f cm\n", 
+           sensor->sensorId, timeElapsed, distance);
     return distance;
 }
 
@@ -144,6 +161,7 @@ static void getAllDistances(double* distances) {
     }
     pthread_mutex_unlock(&distanceMutex);
 }
+
 int main() {
     // Initialize the sensors
     if(initEchoSensors() < 0) {

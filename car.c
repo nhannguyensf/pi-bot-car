@@ -24,12 +24,9 @@ void Handler(int signo)
 
 int main(void) {
     Motor_Init();
-    signal(SIGINT, handler);
+    signal(SIGINT, Handler);
 
     // Initialize encoders
-    initializeEncoder(SPI0_CE0, "Motor A");
-    initializeEncoder(SPI0_CE1, "Motor B");
-
     while(!stop) {
         pid_control();
     }

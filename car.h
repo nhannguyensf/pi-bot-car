@@ -16,7 +16,6 @@
 #include "motor/DEV_Config.h"
 #include "motor/PCA9685.h"
 #include "motor/MotorDriver.h"
-#include "encoder/ls7336r.h"
-#include "encoder/motor.h"
+#include "pid/pid.h"
 
 #endif

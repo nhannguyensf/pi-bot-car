@@ -4,6 +4,7 @@
 // Including necessary dependencies for motor control
 #include "DEV_Config.h"
 #include "PCA9685.h"
+#include <pigpio.h>
 
 // Defining GPIO pins and PWM channels for Motor A control
 #define PWMA PCA_CHANNEL_0 // PWM channel for controlling speed of Motor A
@@ -15,7 +16,7 @@
 #define BIN2 PCA_CHANNEL_4
 
 #define MOTORA 0
-#define MOTORB 1 // Defining Motor A identifier
+#define MOTORB 1  // Defining Motor A identifier
 
 // Enumeration to represent motor direction
 typedef enum
