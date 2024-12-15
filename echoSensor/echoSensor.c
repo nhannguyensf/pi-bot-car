@@ -7,6 +7,8 @@
 
 // GPIO Pins for 5 sensors
 #define NUM_SENSORS 5
+#define OBJECT_THRESHOLD 20.0  // Distance in cm to detect object
+#define SIDE_CLEARANCE 15.0    // Minimum side clearance needed
 
 typedef struct {
     int trig;
@@ -16,11 +18,11 @@ typedef struct {
 
 // Array of sensor pins
 static const SensorPins sensorPins[NUM_SENSORS] = {
-    {14, 15, 0},  
-    {13, 21, 1},  
-    {6, 26, 2}, 
-    {5, 19, 3},    
-    {4, 25, 4}   
+    {14, 15, 0},  // Left sensor
+    {13, 21, 1},  // Left-center sensor
+    {6, 26, 2},   // Center sensor
+    {19, 20, 3},  // Right-center sensor
+    {16, 12, 4}   // Right sensor
 };
 
 // Global variables
@@ -29,10 +31,18 @@ static pthread_mutex_t distanceMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t threads[NUM_SENSORS];
 static bool isRunning = false;
 
+// Global variables for object detection
+static bool object_detected = false;
+static int object_direction = 0;  // -1 for left, 1 for right
+static pthread_mutex_t object_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 // Function declarations
 static double getDistance(const SensorPins* sensor);
 static void* sensorThread(void* arg);
 static void getAllDistances(double* distances);
+bool checkForObject(double distances[NUM_SENSORS], int* avoid_direction);
+bool isObjectDetected();
+int getAvoidanceDirection();
 
 // Initialize the echo sensor system
 int initEchoSensors() {
@@ -144,6 +154,55 @@ static void getAllDistances(double* distances) {
     }
     pthread_mutex_unlock(&distanceMutex);
 }
+
+// Check if there's an object in the path and determine best avoidance direction
+bool checkForObject(double distances[NUM_SENSORS], int* avoid_direction) {
+    pthread_mutex_lock(&object_mutex);
+    
+    bool found_object = false;
+    
+    // Check center sensors for objects
+    if (distances[2] < OBJECT_THRESHOLD) {  // Center sensor detects object
+        found_object = true;
+        
+        // Determine which direction has more clearance
+        double left_space = distances[0];   // Left sensor
+        double right_space = distances[4];  // Right sensor
+        
+        if (left_space > right_space && left_space > SIDE_CLEARANCE) {
+            *avoid_direction = -1;  // Go left
+        } else if (right_space > SIDE_CLEARANCE) {
+            *avoid_direction = 1;   // Go right
+        } else {
+            *avoid_direction = 0;   // No clear path
+        }
+    }
+    
+    object_detected = found_object;
+    object_direction = *avoid_direction;
+    
+    pthread_mutex_unlock(&object_mutex);
+    return found_object;
+}
+
+// Get object detection status
+bool isObjectDetected() {
+    bool status;
+    pthread_mutex_lock(&object_mutex);
+    status = object_detected;
+    pthread_mutex_unlock(&object_mutex);
+    return status;
+}
+
+// Get recommended avoidance direction
+int getAvoidanceDirection() {
+    int direction;
+    pthread_mutex_lock(&object_mutex);
+    direction = object_direction;
+    pthread_mutex_unlock(&object_mutex);
+    return direction;
+}
+
 int main() {
     // Initialize the sensors
     if(initEchoSensors() < 0) {
@@ -153,6 +212,7 @@ int main() {
     
     // Main loop to read and display distances
     double distances[NUM_SENSORS];
+    int avoid_direction;
     while(1) {
         if(getCurrentDistances(distances) == 0) {
             printf("Distances: [");
@@ -165,6 +225,10 @@ int main() {
                 if(i < NUM_SENSORS - 1) printf(", ");
             }
             printf("] cm\n");
+            
+            if(checkForObject(distances, &avoid_direction)) {
+                printf("Object detected! Avoidance direction: %d\n", avoid_direction);
+            }
         }
         sleep(1);
     }
