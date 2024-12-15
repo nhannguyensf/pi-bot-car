@@ -18,14 +18,13 @@
 #ifndef PID_H
 #define PID_H
 
-// Constants for PID control
-#define KP 1.2  // Proportional constant
-#define KI 0.5  // Integral constant
-#define KD 0.3  // Derivative constant
+#define KP 35.0f
+#define KI 0.5f
+#define KD 0.0f
 
 // Motor speed limits
 #define MAX_SPEED 100
-#define MIN_SPEED -100
+#define MIN_SPEED 0
 
 // Shared variables for sensor and PID values
 extern int sensor_positions[NUM_SENSORS];  // Positions of line sensors

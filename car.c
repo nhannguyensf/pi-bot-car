@@ -11,6 +11,10 @@
 *   This program initializes the car's components, including
 *   motors, line sensors, and PID control. The car follows a
 *   line using real-time sensor data and PID calculations.
+*
+* Usage:
+*   Run the program and ensure the car is placed on the track.
+*   Press Ctrl + C (SIGINT) to stop the program and halt motors.
 **************************************************************/
 
 #include "line_sensor.h"
@@ -34,7 +38,6 @@ void signal_handler(int signo) {
 }
 
 int main(void) {
-
     // Initialize car components
     printf("Initializing car components...\n");
     Motor_Init();          // Initialize motors
@@ -57,13 +60,14 @@ int main(void) {
         // Compute the PID error based on sensor readings
         float error = pid_compute(sensor_states);
 
-        // Print debug information
+        // Print debug information (if desired, you can disable this for cleaner output)
         print_debug_info(sensor_states, error);
 
         // Adjust motor speeds based on the PID error
         adjust_motor_speed(error);
 
         // Add a short delay for stability (adjust as needed)
+        // The delay gives time for motors to react and sensors to stabilize
         usleep(50000); // 50ms
     }
 
