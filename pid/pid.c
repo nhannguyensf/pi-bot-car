@@ -9,7 +9,7 @@
 
 // Control limits
 #define MAX_CONTROL 100
-#define BASE_SPEED 50
+#define BASE_SPEED 75
 
 // Global variables for PID calculation
 static double last_error = 0;

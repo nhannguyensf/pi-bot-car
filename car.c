@@ -24,7 +24,7 @@ void Handler(int signo)
 
 int main(void) {
     initializeMotorSystem();
-    signal(SIGINT, handler);
+    signal(SIGINT, Handler);
 
     // Initialize encoders
     initializeEncoder(SPI0_CE0, "Motor A");
