@@ -23,38 +23,65 @@ void Handler(int signo)
 
 
 int main(void) {
+    // Initialize pigpio library
+    if (gpioInitialise() < 0) {
+        printf("pigpio initialization failed.\n");
+        return 1;
+    }
+
+    // Initialize motors
     Motor_Init();
-    signal(SIGINT, Handler);
 
-    // Initialize encoders
-    while(!stop) {
-        pid_control();
-    }
+    // Initialize line sensors
+    line_sensors_init();
 
+    // Initialize PID controller
+    pid_init();
 
+    // (Optional) Initialize LED pin
     /*
-    // Start motors
-    printf("Running motors forward at 50%% speed\n");
-    Motor_Run(MOTORA, 50);
-    Motor_Run(MOTORB, 50);
+    gpioSetMode(LED_PIN, PI_OUTPUT);
+    gpioWrite(LED_PIN, 0); // LED off
+    */
 
-
-    int lastCountA = 0, lastCountB = 0;
-
-    // Exception handling:ctrl + c
-    signal(SIGINT, Handler);
-    while(1) {
-    for (int i = 0; i < 20 && !stop; i++) {
-        readEncoder(SPI0_CE0, &lastCountA, "Motor A");
-        readEncoder(SPI0_CE1, &lastCountB, "Motor B");
-        sleep(1); // 1-second interval
+    // Register signal handler for graceful termination
+    if (signal(SIGINT, Handler) == SIG_ERR) {
+        printf("Failed to set signal handler.\n");
+        gpioTerminate();
+        return 1;
     }
+
+    printf("Line-Following Car with PID Control is running. Press CTRL+C to exit.\n");
+
+    while (!stop) {
+        int sensor_states[NUM_SENSORS];
+
+        // Read line sensor states (1 for line detected, 0 otherwise)
+        read_line_sensors(sensor_states);
+
+        // Compute PID control signal based on sensor states
+        double control = pid_compute(sensor_states);
+
+        // Adjust motor speeds based on PID control signal
+        adjust_motor_speed(control);
+
+        // (Optional) Adjust LED Brightness or other features
+        /*
+        // Example: Adjust LED based on control signal or sensor states
+        if (control > 10) {
+            gpioWrite(LED_PIN, 1); // Turn LED on
+        } else {
+            gpioWrite(LED_PIN, 0); // Turn LED off
+        }
+        */
+
+        usleep(50000); // 50ms delay for smoother control
     }
-     */
 
     // Stop motors and cleanup
-
     Motor_Stop_All();
+    gpioTerminate();
     printf("Program exited successfully.\n");
+
     return 0;
 }
