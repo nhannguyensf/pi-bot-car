@@ -4,51 +4,96 @@
 #include "../echoSensor/echoSensor.h"
 #include <unistd.h>
 #include <stdbool.h>
+#include <time.h>
 
 // PID constants
 #define KP 35.5  
 #define KI 0  
-#define KD 0  // Derivative gain
+#define KD 0  
 
 // Control limits
 #define MAX_CONTROL 100
 #define BASE_SPEED 75
 
-// Object detection threshold
-#define OBJECT_THRESHOLD 20.0
+// Object detection thresholds
+#define FRONT_THRESHOLD 20.0  // Distance to detect front obstacle
+#define SIDE_THRESHOLD 25.0   // Distance to detect side obstacle
+#define TURN_SPEED 15        // Speed for turning
+#define AVOID_SPEED 50       // Speed while avoiding obstacle
+
+// Turn timing (microseconds)
+#define TURN_90_TIME 750000  // 750ms for 90-degree turn at speed 15
+
+// Robot states
+typedef enum {
+    FOLLOWING_LINE,
+    STOPPING,
+    TURNING_RIGHT,
+    CHECK_RIGHT,
+    MOVE_FORWARD_SHORT,
+    CHECK_LEFT,
+    ALIGN_STRAIGHT,
+    MOVE_FORWARD,
+    TURNING_LEFT,
+    FIND_LINE
+} RobotState;
+
+static RobotState current_state = FOLLOWING_LINE;
+static struct timespec turn_start_time;
+static bool turn_started = false;
 
 // Global variables for PID calculation
 static double last_error = 0;
 static double integral = 0;
 
-// Function to check for obstacles
-static bool check_for_obstacles() {
-    double distances[NUM_SENSORS];
-    
-    if (getCurrentDistances(distances) == 0) {
-        // Print all sensor distances for debugging
-        printf("Echo Distances: [");
-        for (int i = 0; i < NUM_SENSORS; i++) {
-            if (distances[i] < 0) {
-                printf("NaN");
-            } else {
-                printf("%.2f", distances[i]);
-            }
-            if (i < NUM_SENSORS - 1) {
-                printf(", ");
-            }
-        }
-        printf("] cm\n");
-        fflush(stdout);
+// Function to safely stop motors
+static void stop_motors() {
+    Motor_Run(MOTORA, 0);
+    Motor_Run(MOTORB, 0);
+    usleep(50000); // Short delay after stopping
+}
 
-        // Check each sensor for obstacles
-        for (int i = 0; i < NUM_SENSORS; i++) {
-            if (distances[i] > 0 && distances[i] < OBJECT_THRESHOLD) {
-                printf("Obstacle detected at sensor %d (%.2f cm)! Stopping!\n", 
-                       i, distances[i]);
-                fflush(stdout);
-                return true;
-            }
+// Function to start turn timer
+static void start_turn_timer() {
+    clock_gettime(CLOCK_MONOTONIC, &turn_start_time);
+    turn_started = true;
+}
+
+// Function to check if turn is complete
+static bool is_turn_complete() {
+    if (!turn_started) return false;
+    
+    struct timespec current_time;
+    clock_gettime(CLOCK_MONOTONIC, &current_time);
+    
+    long elapsed_us = (current_time.tv_sec - turn_start_time.tv_sec) * 1000000 +
+                     (current_time.tv_nsec - turn_start_time.tv_nsec) / 1000;
+                     
+    return elapsed_us >= TURN_90_TIME;
+}
+
+// Function to check front sensor for obstacles
+static bool check_front_obstacle() {
+    double distances[NUM_SENSORS];
+    if (getCurrentDistances(distances) == 0) {
+        // Check middle sensor (index 1)
+        if (distances[1] > 0 && distances[1] < FRONT_THRESHOLD) {
+            printf("Front obstacle detected at %.2f cm!\n", distances[1]);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Function to check side sensors for obstacles
+static bool check_side_obstacle(int side) {
+    double distances[NUM_SENSORS];
+    if (getCurrentDistances(distances) == 0) {
+        // side 0 for left (index 0), side 2 for right (index 2)
+        if (distances[side] > 0 && distances[side] < SIDE_THRESHOLD) {
+            printf("%s obstacle detected at %.2f cm!\n", 
+                   side == 0 ? "Left" : "Right", distances[side]);
+            return true;
         }
     }
     return false;
@@ -56,7 +101,6 @@ static bool check_for_obstacles() {
 
 // Function to calculate weighted position from line sensors
 double calculate_line_position(int* sensor_states) {
-    // Weights for each sensor from left to right
     const double weights[] = {-2.0, -1.0, 0.0, 1.0, 2.0};
     double weighted_sum = 0;
     int active_sensors = 0;
@@ -68,7 +112,6 @@ double calculate_line_position(int* sensor_states) {
         }
     }
     
-    // If no sensors are active, return the last known position
     if (active_sensors == 0) {
         return last_error;
     }
@@ -76,62 +119,168 @@ double calculate_line_position(int* sensor_states) {
     return weighted_sum / active_sensors;
 }
 
+// Function to check if we've found the line
+static bool check_for_line() {
+    int sensor_states[NUM_SENSORS];
+    read_line_sensors(sensor_states);
+    
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (sensor_states[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Main PID control function
 void pid_control() {
     static int echo_check_counter = 0;
     int sensor_states[NUM_SENSORS];
 
-    // Check for obstacles every few iterations
-    if (++echo_check_counter >= 1) {
-        echo_check_counter = 0;
-        if (check_for_obstacles()) {
-            // Stop motors and wait before rechecking
-            Motor_Run(MOTORA, 0);
-            Motor_Run(MOTORB, 0);
-            usleep(100000); // Wait 100ms before rechecking
-            return;
-        }
-    }
+    // State machine for robot behavior
+    switch (current_state) {
+        case FOLLOWING_LINE:
+            // Check for obstacles periodically
+            if (++echo_check_counter >= 1) {
+                echo_check_counter = 0;
+                if (check_front_obstacle()) {
+                    printf("Front obstacle detected! Stopping...\n");
+                    stop_motors();
+                    current_state = STOPPING;
+                    return;
+                }
+            }
 
-    // No obstacles detected, proceed with line following
-    read_line_sensors(sensor_states);
-    
-    // Calculate current position error
-    double error = calculate_line_position(sensor_states);
-    
-    // PID calculations
-    integral += error;
-    double derivative = error - last_error;
-    
-    // Anti-windup for integral term
-    if (integral > MAX_CONTROL) integral = MAX_CONTROL;
-    if (integral < -MAX_CONTROL) integral = -MAX_CONTROL;
-    
-    // Calculate control signal
-    double control = KP * error + KI * integral + KD * derivative;
-    
-    // Limit control signal
-    if (control > MAX_CONTROL) control = MAX_CONTROL;
-    if (control < -MAX_CONTROL) control = -MAX_CONTROL;
-    
-    // Apply control to motors
-    int left_speed = BASE_SPEED - control;
-    int right_speed = BASE_SPEED + control;
-    
-    // Ensure speeds are within bounds
-    if (left_speed > 100) left_speed = 100;
-    if (left_speed < -100) left_speed = -100;
-    if (right_speed > 100) right_speed = 100;
-    if (right_speed < -100) right_speed = -100;
-    
-    // Update motor speeds
-    Motor_Run(MOTORA, left_speed);  // Left motor
-    Motor_Run(MOTORB, right_speed); // Right motor
-    
-    // Update last error for next iteration
-    last_error = error;
-    
-    // Debug output
-    printf("Error: %.2f, Control: %.2f, Left: %d, Right: %d\n", 
-           error, control, left_speed, right_speed);
+            // Normal line following
+            read_line_sensors(sensor_states);
+            double error = calculate_line_position(sensor_states);
+            integral += error;
+            double derivative = error - last_error;
+            
+            if (integral > MAX_CONTROL) integral = MAX_CONTROL;
+            if (integral < -MAX_CONTROL) integral = -MAX_CONTROL;
+            
+            double control = KP * error + KI * integral + KD * derivative;
+            if (control > MAX_CONTROL) control = MAX_CONTROL;
+            if (control < -MAX_CONTROL) control = -MAX_CONTROL;
+            
+            int left_speed = BASE_SPEED - control;
+            int right_speed = BASE_SPEED + control;
+            
+            if (left_speed > 100) left_speed = 100;
+            if (left_speed < -100) left_speed = -100;
+            if (right_speed > 100) right_speed = 100;
+            if (right_speed < -100) right_speed = -100;
+            
+            Motor_Run(MOTORA, left_speed);
+            Motor_Run(MOTORB, right_speed);
+            last_error = error;
+            break;
+
+        case STOPPING:
+            printf("Robot stopped. Starting right turn...\n");
+            usleep(500000);  // Wait for 0.5 seconds
+            turn_started = false;
+            current_state = TURNING_RIGHT;
+            break;
+
+        case TURNING_RIGHT:
+            if (!turn_started) {
+                printf("Starting 90-degree right turn\n");
+                start_turn_timer();
+                Motor_Run(MOTORA, TURN_SPEED);    // Left motor forward
+                Motor_Run(MOTORB, -TURN_SPEED);   // Right motor reverse
+            } else if (is_turn_complete()) {
+                printf("Right turn complete, checking right side\n");
+                stop_motors();
+                turn_started = false;
+                current_state = CHECK_RIGHT;
+            }
+            break;
+
+        case CHECK_RIGHT:
+            if (check_side_obstacle(2)) {  // Check right sensor
+                printf("Right side blocked, cannot proceed\n");
+                // TODO: Implement alternative strategy
+                current_state = TURNING_LEFT;
+            } else {
+                printf("Right side clear, moving forward\n");
+                current_state = MOVE_FORWARD_SHORT;
+            }
+            break;
+
+        case MOVE_FORWARD_SHORT:
+            Motor_Run(MOTORA, AVOID_SPEED);
+            Motor_Run(MOTORB, AVOID_SPEED);
+            usleep(500000);  // Move forward for 0.5 seconds
+            stop_motors();
+            printf("Checking left side\n");
+            current_state = CHECK_LEFT;
+            break;
+
+        case CHECK_LEFT:
+            if (check_side_obstacle(0)) {  // Check left sensor
+                printf("Left side blocked, continuing forward\n");
+                current_state = ALIGN_STRAIGHT;
+            } else {
+                printf("Left side clear, turning to face straight\n");
+                turn_started = false;
+                current_state = ALIGN_STRAIGHT;
+            }
+            break;
+
+        case ALIGN_STRAIGHT:
+            if (!turn_started) {
+                printf("Aligning straight\n");
+                start_turn_timer();
+                Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
+                Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
+            } else if (is_turn_complete()) {
+                printf("Aligned straight, moving forward\n");
+                stop_motors();
+                turn_started = false;
+                current_state = MOVE_FORWARD;
+            }
+            break;
+
+        case MOVE_FORWARD:
+            Motor_Run(MOTORA, AVOID_SPEED);
+            Motor_Run(MOTORB, AVOID_SPEED);
+            usleep(1000000);  // Move forward for 1 second
+            stop_motors();
+            
+            if (!check_side_obstacle(0)) {  // Check left side again
+                printf("Left side clear, starting full left turn\n");
+                turn_started = false;
+                current_state = TURNING_LEFT;
+            } else {
+                printf("Left side blocked, continuing line following\n");
+                current_state = FOLLOWING_LINE;
+            }
+            break;
+
+        case TURNING_LEFT:
+            if (!turn_started) {
+                printf("Starting full left turn\n");
+                start_turn_timer();
+                Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
+                Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
+            } else if (is_turn_complete()) {
+                printf("Left turn complete, searching for line\n");
+                stop_motors();
+                current_state = FIND_LINE;
+            }
+            break;
+
+        case FIND_LINE:
+            if (check_for_line()) {
+                printf("Line found! Resuming line following\n");
+                current_state = FOLLOWING_LINE;
+            } else {
+                // Continue turning slowly until line is found
+                Motor_Run(MOTORA, -TURN_SPEED/2);
+                Motor_Run(MOTORB, TURN_SPEED/2);
+            }
+            break;
+    }
 }

@@ -45,7 +45,6 @@ int main(void) {
     // Main control loop
     while(!stop) {
         pid_control();
-        usleep(10000); // 10ms delay between iterations
     }
 
     // Cleanup
