@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 // GPIO Pins for 5 sensors
-#define NUM_SENSORS 5
+#define NUM_SENSORS 3
 
 typedef struct {
     int trig;
@@ -16,11 +16,9 @@ typedef struct {
 
 // Array of sensor pins
 static const SensorPins sensorPins[NUM_SENSORS] = {
-    {4, 5, 0},    // Sensor 0
-    {6, 13, 1},   // Sensor 1
-    {26, 12, 2},  // Sensor 2
-    {20, 21, 3},  // Sensor 3
-    {25, 16, 4}   // Sensor 4
+    {4, 5, 0},     // Sensor 0
+    {26, 12, 1},   // Sensor 2 (now index 1)
+    {25, 16, 2}    // Sensor 4 (now index 2)
 };
 
 // Global variables
@@ -93,23 +91,23 @@ static double getDistance(const SensorPins* sensor) {
     usleep(10);
     gpioWrite(sensor->trig, 0);
 
-    // Wait for Echo to go high (with timeout)
+    // Wait for Echo to go high (with shorter timeout)
     int timeout = 0;
-    while(gpioRead(sensor->echo) == 0 && timeout < 30000) {
+    while(gpioRead(sensor->echo) == 0 && timeout < 10000) {  
         timeout++;
         usleep(1);
     }
-    if (timeout >= 30000) return -1;
+    if (timeout >= 10000) return -1;
 
     startTick = gpioTick();
 
-    // Wait for Echo to go low (with timeout)
+    // Wait for Echo to go low (with shorter timeout)
     timeout = 0;
-    while(gpioRead(sensor->echo) == 1 && timeout < 30000) {
+    while(gpioRead(sensor->echo) == 1 && timeout < 10000) {  
         timeout++;
         usleep(1);
     }
-    if (timeout >= 30000) return -1;
+    if (timeout >= 10000) return -1;
 
     endTick = gpioTick();
     
@@ -121,15 +119,26 @@ static double getDistance(const SensorPins* sensor) {
 // Poll sensors sequentially
 static void* pollSensorsSequentially(void* arg) {
     while (isRunning) {
-        for (int i = 0; i < NUM_SENSORS; i++) {
-            double distance = getDistance(&sensorPins[i]);
+        // Only poll sensors 0, 2, and 4
+        int sensors_to_poll[] = {0, 1, 2};
+        for (int i = 0; i < 3; i++) {
+            int sensor_idx = sensors_to_poll[i];
+            double distance = getDistance(&sensorPins[sensor_idx]);
             
             pthread_mutex_lock(&distanceMutex);
-            sensorDistances[i] = distance;
+            sensorDistances[sensor_idx] = distance;
             pthread_mutex_unlock(&distanceMutex);
             
-            usleep(50000); // 50ms delay between readings
+            usleep(100000); // 100ms delay between readings
         }
+        
+        // Set unused sensors to inactive state
+        pthread_mutex_lock(&distanceMutex);
+        // sensorDistances[1] = -1;
+        // sensorDistances[3] = -1;
+        pthread_mutex_unlock(&distanceMutex);
+        
+        usleep(50000); // Additional delay between polling cycles
     }
     return NULL;
 }
