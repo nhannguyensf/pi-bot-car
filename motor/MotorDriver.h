@@ -26,7 +26,7 @@ typedef enum
 
 // Function prototype for motor operation
 void Motor_Init(void);
-void Motor_Run(UBYTE motor, UWORD speed);
+void Motor_Run(UBYTE motor, int speed);
 void Motor_Stop(UBYTE motor);
 
 #endif

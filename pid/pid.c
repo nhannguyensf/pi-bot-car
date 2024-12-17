@@ -12,7 +12,7 @@
 #define KD 0  
 
 // Control limits
-#define MAX_CONTROL 100
+#define MAX_CONTROL 200
 #define BASE_SPEED 75
 
 // Object detection thresholds
