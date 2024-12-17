@@ -132,6 +132,14 @@ static bool check_for_line() {
     return false;
 }
 
+// Function to move forward a little after turns
+static void move_forward_briefly() {
+    Motor_Run(MOTORA, AVOID_SPEED);
+    Motor_Run(MOTORB, AVOID_SPEED);
+    usleep(300000);  // Move forward for 0.3 seconds
+    stop_motors();
+}
+
 // Main PID control function
 void pid_control() {
     static int echo_check_counter = 0;
@@ -191,8 +199,9 @@ void pid_control() {
                 Motor_Run(MOTORA, TURN_SPEED);    // Left motor forward
                 Motor_Run(MOTORB, -TURN_SPEED);   // Right motor reverse
             } else if (is_turn_complete()) {
-                printf("Right turn complete, checking right side\n");
+                printf("Right turn complete\n");
                 stop_motors();
+                move_forward_briefly();  // Move forward after turn
                 turn_started = false;
                 current_state = CHECK_RIGHT;
             }
@@ -236,8 +245,9 @@ void pid_control() {
                 Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
                 Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
             } else if (is_turn_complete()) {
-                printf("Aligned straight, moving forward\n");
+                printf("Aligned straight\n");
                 stop_motors();
+                move_forward_briefly();  // Move forward after align
                 turn_started = false;
                 current_state = MOVE_FORWARD;
             }
