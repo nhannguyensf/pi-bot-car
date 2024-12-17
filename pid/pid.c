@@ -22,7 +22,7 @@
 #define AVOID_SPEED 50       // Speed while avoiding obstacle
 
 // Turn timing (microseconds)
-#define TURN_90_TIME 750000  // 750ms for 90-degree turn at speed 15
+#define TURN_90_TIME 7500000  // 750ms for 90-degree turn at speed 15
 
 // Robot states
 typedef enum {
