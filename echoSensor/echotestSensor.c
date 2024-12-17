@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 // GPIO Pins for 5 sensors
-#define NUM_SENSORS 3
+#define NUM_SENSORS 5
 
 typedef struct {
     int trig;
@@ -16,9 +16,11 @@ typedef struct {
 
 // Array of sensor pins
 static const SensorPins sensorPins[NUM_SENSORS] = {
-    {4, 5, 0},     // Sensor 0
-    {26, 12, 1},   // Sensor 2 (now index 1)
-    {25, 16, 2}    // Sensor 4 (now index 2)
+    {4, 5, 0},  // Sensor 0
+    {6, 13, 1}, // Sensor 1
+    {26, 12, 2}, // Sensor 2
+    {20, 21, 3},  // Sensor 3
+    {25, 16, 4} // Sensor 4
 };
 
 // Global variables
@@ -47,6 +49,7 @@ int initEchoSensors() {
         gpioSetMode(sensorPins[i].trig, PI_OUTPUT);
         printf("Initialized Sensor %d: Trig=%d, Echo=%d\n", 
                i, sensorPins[i].trig, sensorPins[i].echo);
+        // Ensure trigger is low
         gpioWrite(sensorPins[i].trig, 0);
     }
 
@@ -62,6 +65,7 @@ int initEchoSensors() {
 }
 
 // Get the current distances from all sensors
+// Returns 0 on success, -1 on failure
 int getCurrentDistances(double distances[NUM_SENSORS]) {
     if (!isRunning) return -1;
 
@@ -78,7 +82,10 @@ void cleanupEchoSensors() {
     if (!isRunning) return;
 
     isRunning = false;
+
+    // Wait for the polling thread to finish
     pthread_join(pollThread, NULL);
+
     gpioTerminate();
 }
 
@@ -86,79 +93,90 @@ void cleanupEchoSensors() {
 static double getDistance(const SensorPins* sensor) {
     int startTick, endTick;
 
-    // Send trigger signal
+    // Send out a trigger signal
     gpioWrite(sensor->trig, 1);
-    usleep(10);
+    usleep(10); // 10-microsecond trigger pulse
     gpioWrite(sensor->trig, 0);
 
-    // Wait for Echo to go high (with shorter timeout)
+    // Wait for Echo to go high (with timeout)
     int timeout = 0;
-    while(gpioRead(sensor->echo) == 0 && timeout < 10000) {  
+    while (gpioRead(sensor->echo) == 0 && timeout < 30000) {
         timeout++;
         usleep(1);
     }
-    if (timeout >= 10000) return -1;
+    if (timeout >= 30000) {
+        printf("Sensor %d: Echo pin timeout on high\n", sensor->sensorId);
+        return -1;
+    }
 
+    // Record the start time
     startTick = gpioTick();
 
-    // Wait for Echo to go low (with shorter timeout)
+    // Wait for Echo to go low (with timeout)
     timeout = 0;
-    while(gpioRead(sensor->echo) == 1 && timeout < 10000) {  
+    while (gpioRead(sensor->echo) == 1 && timeout < 30000) {
         timeout++;
         usleep(1);
     }
-    if (timeout >= 10000) return -1;
+    if (timeout >= 30000) {
+        printf("Sensor %d: Echo pin timeout on low\n", sensor->sensorId);
+        return -1;
+    }
 
+    // Record the end time
     endTick = gpioTick();
-    
-    // Calculate distance in cm
-    double distance = ((endTick - startTick) * 0.0343) / 2.0;
+    int timeElapsed = endTick - startTick;
+
+    // Calculate distance
+    double distance = (timeElapsed * 0.0343) / 2.0;
     return distance;
 }
 
 // Poll sensors sequentially
 static void* pollSensorsSequentially(void* arg) {
     while (isRunning) {
-        // Only poll sensors 0, 2, and 4
-        int sensors_to_poll[] = {0, 1, 2};
-        for (int i = 0; i < 3; i++) {
-            int sensor_idx = sensors_to_poll[i];
-            double distance = getDistance(&sensorPins[sensor_idx]);
-            
+        for (int i = 0; i < NUM_SENSORS; i++) {
+            double distance = getDistance(&sensorPins[i]);
+
             pthread_mutex_lock(&distanceMutex);
-            sensorDistances[sensor_idx] = distance;
+            sensorDistances[i] = distance;
             pthread_mutex_unlock(&distanceMutex);
-            
-            usleep(100000); // 100ms delay between readings
+
+            //printf("Sensor %d: Distance = %.2f cm\n", i, distance);
+
+            // Delay between polling each sensor to avoid interference
+            usleep(60000); // 60 milliseconds
         }
-        
-        // Set unused sensors to inactive state
-        pthread_mutex_lock(&distanceMutex);
-        // sensorDistances[1] = -1;
-        // sensorDistances[3] = -1;
-        pthread_mutex_unlock(&distanceMutex);
-        
-        usleep(50000); // Additional delay between polling cycles
     }
     return NULL;
 }
 
-void printSensorDistances() {
-    double distances[NUM_SENSORS];
-    if (getCurrentDistances(distances) == 0) {
-        printf("Distances: [");
-        for (int i = 0; i < NUM_SENSORS; i++) {
-            if (distances[i] < 0) {
-                printf("NaN");
-            } else {
-                printf("%.2f", distances[i]);
-            }
-            if (i < NUM_SENSORS - 1) {
-                printf(", ");
-            }
-        }
-        printf("] cm\n");
-    } else {
-        printf("Failed to read distances.\n");
+// Main program
+int main() {
+    // Initialize the sensors
+    if (initEchoSensors() < 0) {
+        printf("Failed to initialize echo sensors\n");
+        return 1;
     }
+
+    // Main loop to read and display distances
+    double distances[NUM_SENSORS];
+    while (1) {
+        if (getCurrentDistances(distances) == 0) {
+            printf("Distances: [");
+            for (int i = 0; i < NUM_SENSORS; i++) {
+                if (distances[i] < 0) {
+                    printf("NaN");
+                } else {
+                    printf("%.2f", distances[i]);
+                }
+                if (i < NUM_SENSORS - 1) printf(", ");
+            }
+            printf("] cm\n");
+        }
+        sleep(1);
+    }
+
+    cleanupEchoSensors();
+    return 0;
 }

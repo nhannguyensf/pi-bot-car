@@ -19,41 +19,41 @@ void Handler(int signo)
     // System Exit
     printf("\r\nHandler: Motor Stop\r\n");
     stop = 1;
-    stopMotors();
-    DEV_ModuleExit();
-    exit(0);
 }
 
-int main(void) {
-    initializeMotorSystem();
-    
-    // Start motors
-    printf("Running motors forward at 50%% speed\n");
-    Motor_Run(MOTORA, 50);
-    Motor_Run(MOTORB, 50);
 
-    // Initialize encoders
+int main(void) {
+    // Initialize all systems
+    printf("Initializing motor system...\n");
+    initializeMotorSystem();
+
+    printf("Initializing echo sensors...\n");
+    if (initEchoSensors() < 0) {
+        printf("Failed to initialize echo sensors\n");
+        return 1;
+    }
+
+    // Set up signal handler
+    signal(SIGINT, Handler);
+
+    printf("Initializing encoders...\n");
     initializeEncoder(SPI0_CE0, "Motor A");
     initializeEncoder(SPI0_CE1, "Motor B");
-    
 
-    int lastCountA = 0, lastCountB = 0;
+    printf("All systems initialized. Starting control loop...\n");
 
-    // Exception handling:ctrl + c
-    signal(SIGINT, Handler);
-    while(1) {
-    for (int i = 0; i < 20 && !stop; i++) {
-        readEncoder(SPI0_CE0, &lastCountA, "Motor A");
-        readEncoder(SPI0_CE1, &lastCountB, "Motor B");
-        sleep(1); // 1-second interval
-    }
+    // Main control loop
+    while(!stop) {
+        pid_control();
+        usleep(10000); // 10ms delay between iterations
     }
 
-    // Stop motors and cleanup
+    // Cleanup
+    printf("\nCleaning up...\n");
     stopMotors();
+    cleanupEchoSensors();
     gpioTerminate();
     DEV_ModuleExit();
     printf("Program exited successfully.\n");
-
     return 0;
 }

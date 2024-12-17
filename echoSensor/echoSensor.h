@@ -1,15 +1,23 @@
 #ifndef ECHO_SENSOR_H
 #define ECHO_SENSOR_H
 
-// Number of sensors in the array
+#include <stdbool.h>
+
 #define NUM_SENSORS 5
 
-// Initialize the echo sensor system
-// Returns 0 on success, -1 on failure
-int initEchoSensors(void);
+typedef struct {
+    bool object_detected;
+    bool front_blocked;
+    double front_distances[3];
+    double side_distances[2];
+    int recommended_direction; // -1 for left, 1 for right, 0 for no clear path
+} ObjectDetectionState;
+
+int initEchoSensors();
+void cleanupEchoSensors();
 int getCurrentDistances(double distances[NUM_SENSORS]);
+void updateObjectDetection(double distances[NUM_SENSORS]);
+void getObjectDetectionState(ObjectDetectionState* state);
+void printSensorDistances();
 
-// Cleanup and stop the echo sensor system
-void cleanupEchoSensors(void);
-
-#endif // ECHO_SENSOR_H
+#endif

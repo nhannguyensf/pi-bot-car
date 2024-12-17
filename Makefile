@@ -2,28 +2,41 @@ CC = gcc
 CFLAGS = -Wall -O2 -DUSE_BCM2835_LIB
 LDFLAGS = -lpigpio -lpthread -lbcm2835 -lm -lrt
 
+# List of source files
 SRC = \
-	motor/DEV_Config.c \
-	motor/MotorDriver.c \
-	motor/PCA9685.c \
+    motor/DEV_Config.c \
+    motor/MotorDriver.c \
+    motor/PCA9685.c \
     encoder/ls7336r.c \
     encoder/motor.c \
-	car.c
+    line-sensor/line_sensor.c \
+    echoSensor/echoSensor.c \
+    pid/pid.c \
+    car.c
 
+# Directory structure
 BIN_DIR = bin
 OBJ = $(SRC:%.c=$(BIN_DIR)/%.o)
 
+# Include directories
 INCLUDES = \
     -I./motor \
-    -I./encoder
+    -I./encoder \
+    -I./line-sensor \
+    -I./echoSensor \
+    -I./pid
 
+# Libraries
 LIBS = \
-	-lbcm2835 -lm -lpthread -lpigpio -lrt
+    -lbcm2835 -lm -lpthread -lpigpio -lrt
 
+# Target binary
 TARGET = car
 
-all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(TARGET)
+# Default target
+all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/echoSensor $(BIN_DIR)/pid $(TARGET)
 
+# Create necessary directories
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
@@ -33,17 +46,26 @@ $(BIN_DIR)/motor:
 $(BIN_DIR)/encoder:
 	mkdir -p $(BIN_DIR)/encoder
 
+$(BIN_DIR)/line-sensor:
+	mkdir -p $(BIN_DIR)/line-sensor
+
+$(BIN_DIR)/echoSensor:
+	mkdir -p $(BIN_DIR)/echoSensor
+
+$(BIN_DIR)/pid:
+	mkdir -p $(BIN_DIR)/pid
+
+# Link object files into the final binary
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LIBS)
 
+# Compile object files
 $(BIN_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(BIN_DIR) $(TARGET)
 
-ls7336r: encoder/ls7336r.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ encoder/ls7336r.c $(LDFLAGS)
-
+# Run the final binary with root permissions
 run:
-	sudo ./car
+	sudo ./$(TARGET)
