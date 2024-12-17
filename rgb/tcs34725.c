@@ -278,7 +278,7 @@ const char* detect_color(int handle)
 }
 
 // New Function: Detect color and adjust LED brightness
-int detect_and_adjust_led(int handle) {
+int detect_and_adjust_led(int handle, int *result) {
     const char* color = detect_color(handle);
     
     if (strcmp(color, "Error") == 0) {
@@ -293,13 +293,17 @@ int detect_and_adjust_led(int handle) {
         if (set_led_brightness(LED_PIN, 50) < 0) {
             return -1;
         }
+
+        *result = 1;
     }
     else if (strcmp(color, "Unknown") == 0) {
         // Set LED brightness to 100%
         if (set_led_brightness(LED_PIN, 100) < 0) {
             return -1;
         }
+
+        *result = 0;
     }
 
-    return 0; // Success
+    return 0;
 }

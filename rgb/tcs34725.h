@@ -82,6 +82,6 @@ uint8_t apply_gamma(float value, float gamma);
 int read_average_color_data(int handle, uint16_t* r, uint16_t* g, uint16_t* b, uint16_t* clear, int num_readings, int delay_us);
 int set_sensor_gain(int handle, const char *gain_str);
 const char* detect_color(int handle);
-int detect_and_adjust_led(int handle); // New function declaration
+int detect_and_adjust_led(int handle, int *result);
 
 #endif // TCS34725_H
