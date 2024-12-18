@@ -139,7 +139,22 @@ void pid_control() {
 
     // State machine for robot behavior
     switch (current_state) {
-        case FOLLOWING_LINE:
+        // Check if no line detected
+            read_line_sensors(sensor_states);
+            bool line_detected = false;
+            for (int i = 0; i < NUM_SENSORS; i++) {
+                if (sensor_states[i]) {
+                    line_detected = true;
+                    break;
+                }
+            }
+
+            // If no line detected, skip the loop
+            if (!line_detected) {
+                printf("No line detected, skipping loop...\n");
+                return;
+            }
+
             // Check for obstacles periodically
             if (++echo_check_counter >= 1) {
                 echo_check_counter = 0;
@@ -152,7 +167,6 @@ void pid_control() {
             }
 
             // Normal line following
-            read_line_sensors(sensor_states);
             double error = calculate_line_position(sensor_states);
             integral += error;
             double derivative = error - last_error;
