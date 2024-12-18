@@ -1,36 +1,32 @@
+// line_sensor.c
 #include "line_sensor.h"
-#include <bcm2835.h>
+#include <pigpio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 
 // Array to store sensor readings
 int sensor_readings[MAX_READINGS][NUM_SENSORS];
 int reading_index = 0;
 
-// Initialize the line sensors GPIO pins
-void line_sensors_init() {
-    if (!bcm2835_init()) {
-        fprintf(stderr, "bcm2835 initialization failed\n");
-        exit(1);
-    }
-
+// Initialize the line sensors GPIO pins using pigpio
+int initializeLineSensors() {
     // Set the sensor pins as input
-    bcm2835_gpio_fsel(SENSOR_0_PIN, BCM2835_GPIO_FSEL_INPT);
-    bcm2835_gpio_fsel(SENSOR_1_PIN, BCM2835_GPIO_FSEL_INPT);
-    bcm2835_gpio_fsel(SENSOR_2_PIN, BCM2835_GPIO_FSEL_INPT);
-    bcm2835_gpio_fsel(SENSOR_3_PIN, BCM2835_GPIO_FSEL_INPT);
-    bcm2835_gpio_fsel(SENSOR_4_PIN, BCM2835_GPIO_FSEL_INPT);
+    for(int i = 0; i < NUM_SENSORS; i++) {
+        if (gpioSetMode(LINE_SENSOR_PINS[i], PI_INPUT) < 0) {
+            fprintf(stderr, "Error: Failed to set GPIO %d as input\n", LINE_SENSOR_PINS[i]);
+            return -1;
+        }
+    }
+    printf("Line sensors initialized successfully.\n");
+    return 0;
 }
 
 // Read the state of all line sensors and store in an array
 void read_line_sensors(int* sensor_states) {
-    sensor_states[0] = bcm2835_gpio_lev(SENSOR_0_PIN);
-    sensor_states[1] = bcm2835_gpio_lev(SENSOR_1_PIN);
-    sensor_states[2] = bcm2835_gpio_lev(SENSOR_2_PIN);
-    sensor_states[3] = bcm2835_gpio_lev(SENSOR_3_PIN);
-    sensor_states[4] = bcm2835_gpio_lev(SENSOR_4_PIN);
+    for(int i = 0; i < NUM_SENSORS; i++) {
+        sensor_states[i] = gpioRead(LINE_SENSOR_PINS[i]);
+    }
 }
 
 // Test the line sensors and store results in an array
@@ -60,6 +56,13 @@ void test_line_sensors() {
         printf("\n");
 
         fflush(stdout);  // Ensure output is displayed immediately
-        usleep(50000);   // Sleep for 50ms
+        gpioSleep(GPIO_TIME_RELATIVE, 0, 50000);   // Sleep for 50ms
     }
+}
+
+// Cleanup function for line sensors if needed
+void cleanupLineSensors() {
+    // For pigpio, there's no need for explicit cleanup of GPIO modes
+    // Any necessary cleanup can be done here
+    printf("Line sensors cleanup completed.\n");
 }

@@ -1,133 +1,153 @@
+// PCA9685.c
 #include "PCA9685.h"
-#include "Debug.h" //DEBUG()
-#include <math.h>  //floor()
+#include <pigpio.h>
 #include <stdio.h>
+#include <math.h>
 
-/**
- * Write bytes in PCA9685
- *
- * @param reg: register.
- * @param value: value.
- *
- * Example:
- * PCA9685_WriteByte(0x00, 0xff);
- */
-static void PCA9685_WriteByte(UBYTE reg, UBYTE value)
+// Initialize the PCA9685 module
+int PCA9685_Init(int i2c_handle)
 {
-    I2C_Write_Byte(reg, value);
+    // Reset PCA9685
+    if (i2cWriteByteData(i2c_handle, MODE1, 0x00) < 0) {
+        fprintf(stderr, "Error: Failed to reset PCA9685\n");
+        return -1;
+    }
+
+    // Set MODE2 to OUTDRV (to have totem-pole structure)
+    if (i2cWriteByteData(i2c_handle, MODE2, OUTDRV) < 0) {
+        fprintf(stderr, "Error: Failed to set MODE2\n");
+        return -1;
+    }
+
+    // Set MODE1 to ALLCALL
+    if (i2cWriteByteData(i2c_handle, MODE1, ALLCALL) < 0) {
+        fprintf(stderr, "Error: Failed to set MODE1 to ALLCALL\n");
+        return -1;
+    }
+
+    gpioSleep(GPIO_TIME_RELATIVE, 0, 100000); // Sleep for 100ms
+
+    // Clear SLEEP bit to wake up
+    uint8_t mode1;
+    if (i2cReadByteData(i2c_handle, MODE1) < 0) {
+        fprintf(stderr, "Error: Failed to read MODE1\n");
+        return -1;
+    }
+    mode1 = i2cReadByteData(i2c_handle, MODE1);
+    mode1 &= ~SLEEP;
+    if (i2cWriteByteData(i2c_handle, MODE1, mode1) < 0) {
+        fprintf(stderr, "Error: Failed to clear SLEEP bit\n");
+        return -1;
+    }
+
+    gpioSleep(GPIO_TIME_RELATIVE, 0, 50000); // Sleep for 50ms
+
+    return 0;
 }
 
-/**
- * read byte in PCA9685.
- *
- * @param reg: register.
- *
- * Example:
- * UBYTE buf = PCA9685_ReadByte(0x00);
- */
-static UBYTE PCA9685_ReadByte(UBYTE reg)
+// Set the PWM frequency
+int PCA9685_SetPWMFreq(int i2c_handle, float freq)
 {
-    return I2C_Read_Byte(reg);
-}
-
-/**
- * Set the PWM output.
- *
- * @param channel: 16 output channels.  //(0 ~ 15)
- * @param on: 12-bit register will hold avalue for the ON time.  //(0 ~ 4095)
- * @param off: 12-bit register will hold the value for the OFF time.  //(0 ~ 4095)
- *
- * @For more information, please see page 15 - page 19 of the datasheet.
- * Example:
- * PCA9685_SetPWM(0, 0, 4095);
- */
-static void PCA9685_SetPWM(UBYTE channel, UWORD on, UWORD off)
-{
-    PCA9685_WriteByte(LED0_ON_L + 4 * channel, on & 0xFF);
-    PCA9685_WriteByte(LED0_ON_H + 4 * channel, on >> 8);
-    PCA9685_WriteByte(LED0_OFF_L + 4 * channel, off & 0xFF);
-    PCA9685_WriteByte(LED0_OFF_H + 4 * channel, off >> 8);
-}
-
-/**
- * PCA9685 Initialize.
- * For the PCA9685, the device address can be controlled by setting A0-A5.
- * On our driver board, control is set by setting A0-A4, and A5 is grounded.
- *
- * @param addr: PCA9685 address.  //0x40 ~ 0x5f
- *
- * Example:
- * PCA9685_Init(0x40);
- */
-void PCA9685_Init(char addr)
-{
-    DEV_I2C_Init(addr);
-    I2C_Write_Byte(MODE1, 0x00);
-}
-
-/**
- * Set the frequency (PWM_PRESCALE) and restart.
- *
- * For the PCA9685, Each channel output has its own 12-bit
- * resolution (4096 steps) fixed frequency individual PWM
- * controller that operates at a programmable frequency
- * from a typical of 40 Hz to 1000 Hz with a duty cycle
- * that is adjustable from 0 % to 100 %
- *
- * @param freq: Output frequency.  //40 ~ 1000
- *
- * Example:
- * PCA9685_SetPWMFreq(50);
- */
-void PCA9685_SetPWMFreq(UWORD freq)
-{
-    freq *= 0.9; // Correct for overshoot in the frequency setting (see issue #11).
-    double prescaleval = 25000000.0;
-    prescaleval /= 4096.0;
+    // Calculate prescale value
+    float prescaleval = 25000000.0f; // 25MHz
+    prescaleval /= 4096.0f;           // 12-bit
     prescaleval /= freq;
-    prescaleval -= 1;
-    DEBUG("prescaleval = %lf\r\n", prescaleval);
+    prescaleval -= 1.0f;
 
-    UBYTE prescale = floor(prescaleval + 0.5);
-    DEBUG("prescaleval = %lf\r\n", prescaleval);
+    uint8_t prescale = (uint8_t)floorf(prescaleval + 0.5f);
 
-    UBYTE oldmode = PCA9685_ReadByte(MODE1);
-    UBYTE newmode = (oldmode & 0x7F) | 0x10; // sleep
+    // Read MODE1
+    uint8_t oldmode = i2cReadByteData(i2c_handle, MODE1);
+    if (oldmode < 0) {
+        fprintf(stderr, "Error: Failed to read MODE1 for prescale\n");
+        return -1;
+    }
 
-    PCA9685_WriteByte(MODE1, newmode);     // go to sleep
-    PCA9685_WriteByte(PRESCALE, prescale); // set the prescaler
-    PCA9685_WriteByte(MODE1, oldmode);
-    DEV_Delay_ms(5);
-    PCA9685_WriteByte(MODE1, oldmode | 0x80); //  This sets the MODE1 register to turn on auto increment.
+    // Put PCA9685 to sleep to set prescale
+    uint8_t newmode = (oldmode & 0x7F) | 0x10; // sleep
+    if (i2cWriteByteData(i2c_handle, MODE1, newmode) < 0) {
+        fprintf(stderr, "Error: Failed to set MODE1 to sleep for prescale\n");
+        return -1;
+    }
+
+    // Set prescale
+    if (i2cWriteByteData(i2c_handle, PRESCALE, prescale) < 0) {
+        fprintf(stderr, "Error: Failed to write prescale\n");
+        return -1;
+    }
+
+    // Wake up
+    if (i2cWriteByteData(i2c_handle, MODE1, oldmode) < 0) {
+        fprintf(stderr, "Error: Failed to wake up MODE1\n");
+        return -1;
+    }
+
+    gpioSleep(GPIO_TIME_RELATIVE, 0, 50000); // Sleep for 50ms
+
+    // Restart
+    if (i2cWriteByteData(i2c_handle, MODE1, oldmode | 0x80) < 0) {
+        fprintf(stderr, "Error: Failed to set RESTART bit\n");
+        return -1;
+    }
+
+    return 0;
 }
 
-/**
- * Set channel output the PWM duty cycle.
- *
- * @param channel: 16 output channels.  //(0 ~ 15)
- * @param pulse: duty cycle.  //(0 ~ 100  == 0% ~ 100%)
- *
- * Example:
- * PCA9685_SetPwmDutyCycle(1, 100);
- */
-void PCA9685_SetPwmDutyCycle(UBYTE channel, UWORD pulse)
+// Set PWM duty cycle for a specific channel
+int PCA9685_SetPwmDutyCycle(int i2c_handle, uint8_t channel, uint16_t on, uint16_t off)
 {
-    PCA9685_SetPWM(channel, 0, pulse * (4096 / 100) - 1);
+    if (channel > 15) {
+        fprintf(stderr, "Error: Invalid PCA9685 channel %d\n", channel);
+        return -1;
+    }
+
+    uint8_t base_address = LED0_ON_L + 4 * channel;
+
+    // Write ON time (2 bytes)
+    if (i2cWriteByteData(i2c_handle, base_address, on & 0xFF) < 0 ||
+        i2cWriteByteData(i2c_handle, base_address + 1, (on >> 8) & 0xFF) < 0) {
+        fprintf(stderr, "Error: Failed to write ON time for channel %d\n", channel);
+        return -1;
+    }
+
+    // Write OFF time (2 bytes)
+    if (i2cWriteByteData(i2c_handle, base_address + 2, off & 0xFF) < 0 ||
+        i2cWriteByteData(i2c_handle, base_address + 3, (off >> 8) & 0xFF) < 0) {
+        fprintf(stderr, "Error: Failed to write OFF time for channel %d\n", channel);
+        return -1;
+    }
+
+    return 0;
 }
 
-/**
- * Set channel output level.
- *
- * @param channel: 16 output channels.  //(0 ~ 15)
- * @param value: output level, 0 low level, 1 high level.  //0 or 1
- *
- * Example:
- * PCA9685_SetLevel(3, 1);
- */
-void PCA9685_SetLevel(UBYTE channel, UWORD value)
+// Set PWM level (fully on or off)
+int PCA9685_SetLevel(int i2c_handle, uint8_t channel, uint8_t level)
 {
-    if (value == 1)
-        PCA9685_SetPWM(channel, 0, 4095);
-    else
-        PCA9685_SetPWM(channel, 0, 0);
+    if (level > 1) {
+        fprintf(stderr, "Error: Invalid level %d. Must be 0 or 1.\n", level);
+        return -1;
+    }
+
+    if (level == 1) {
+        // Fully on
+        if (i2cWriteByteData(i2c_handle, LED0_ON_L + 4 * channel, 0xFF) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_ON_H + 4 * channel, 0xFF) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_OFF_L + 4 * channel, 0x00) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_OFF_H + 4 * channel, 0x10) < 0) { // SET_BIT(4) for full on
+            fprintf(stderr, "Error: Failed to set channel %d to fully ON\n", channel);
+            return -1;
+        }
+    }
+    else {
+        // Fully off
+        if (i2cWriteByteData(i2c_handle, LED0_ON_L + 4 * channel, 0x00) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_ON_H + 4 * channel, 0x00) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_OFF_L + 4 * channel, 0x00) < 0 ||
+            i2cWriteByteData(i2c_handle, LED0_OFF_H + 4 * channel, 0x10) < 0) { // SET_BIT(4) for full off
+            fprintf(stderr, "Error: Failed to set channel %d to fully OFF\n", channel);
+            return -1;
+        }
+    }
+
+    return 0;
 }

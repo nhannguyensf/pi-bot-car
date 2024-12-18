@@ -15,12 +15,7 @@
 #ifndef LINE_SENSOR_H
 #define LINE_SENSOR_H
 
-// GPIO pins for Line Sensors
-#define SENSOR_0_PIN 17
-#define SENSOR_1_PIN 27
-#define SENSOR_2_PIN 22
-#define SENSOR_3_PIN 23
-#define SENSOR_4_PIN 24
+#include <stdint.h>
 
 // Define total number of sensors
 #define NUM_SENSORS 5
@@ -29,13 +24,17 @@
 #define TIME_DURATION_SECONDS 20
 #define MAX_READINGS 400  // Assuming 50ms intervals for 20 seconds
 
+// GPIO pins for Line Sensors
+static const uint8_t LINE_SENSOR_PINS[NUM_SENSORS] = {17, 27, 22, 23, 24};
+
 // Array to store sensor readings
 extern int sensor_readings[MAX_READINGS][NUM_SENSORS];
 extern int reading_index;
 
 // Function Prototypes
-void line_sensors_init();                 // Initialize GPIO pins for line sensors
+int initializeLineSensors();                 // Initialize GPIO pins for line sensors
 void read_line_sensors(int* sensor_states); // Read the states of all sensors
-void test_line_sensors();                 // Test the line sensors and log data
+void test_line_sensors();                    // Test the line sensors and log data
+void cleanupLineSensors();                   // Cleanup function for line sensors
 
 #endif // LINE_SENSOR_H

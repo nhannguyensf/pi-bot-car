@@ -1,21 +1,23 @@
-#ifndef __TB6612FNG_
-#define __TB6612FNG_
+// MotorDriver.h
 
-// Including necessary dependencies for motor control
-#include "DEV_Config.h"
-#include "PCA9685.h"
+#ifndef MOTOR_DRIVER_H
+#define MOTOR_DRIVER_H
 
-// Defining GPIO pins and PWM channels for Motor A control
-#define PWMA PCA_CHANNEL_0 // PWM channel for controlling speed of Motor A
-#define AIN1 PCA_CHANNEL_1 // GPIO channel for direction control AIN1
-#define AIN2 PCA_CHANNEL_2 // GPIO channel for direction control AIN2
+#include <stdint.h>
 
-#define PWMB PCA_CHANNEL_5
-#define BIN1 PCA_CHANNEL_3
-#define BIN2 PCA_CHANNEL_4
-
+// Define motor identifiers
 #define MOTORA 0
-#define MOTORB 1 // Defining Motor A identifier
+#define MOTORB 1
+
+// Define PWM channels for PCA9685 (0-15)
+#define PWMA 0  // PWM channel 0 for Motor A
+#define PWMB 1  // PWM channel 1 for Motor B
+
+// Define GPIO pins for motor direction control
+#define AIN1 17 // GPIO pin 17 for Motor A IN1
+#define AIN2 27 // GPIO pin 27 for Motor A IN2
+#define BIN1 22 // GPIO pin 22 for Motor B IN1
+#define BIN2 23 // GPIO pin 23 for Motor B IN2
 
 // Enumeration to represent motor direction
 typedef enum
@@ -24,9 +26,12 @@ typedef enum
     BACKWARD,
 } DIR;
 
-// Function prototype for motor operation
-void Motor_Init(void);
-void Motor_Run(UBYTE motor, int speed);
-void Motor_Stop(UBYTE motor);
+// Function Prototypes
+int Motor_Init(void);                    // Initialize motor system
+int setMotorSpeed(int motor, int speed); // Set motor speed (0-100)
+int setMotorDirection(int motor, DIR direction); // Set motor direction
+int Motor_Run(int motor, DIR direction, int speed); // Run motor with direction and speed
+void Motor_Stop(int motor);              // Stop a specific motor
+void Motor_Stop_All(void);               // Stop all motors
 
-#endif
+#endif // MOTOR_DRIVER_H
