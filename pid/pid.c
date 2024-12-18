@@ -7,13 +7,13 @@
 #include <time.h>
 
 // PID constants
-#define KP 40
-#define KI 1.7
-#define KD 1.2
+#define KP 35
+#define KI 0.4
+#define KD 0
 
 // Control limits
 #define MAX_CONTROL 200
-#define BASE_SPEED 75
+#define BASE_SPEED 60
 
 // Object detection thresholds
 #define FRONT_THRESHOLD 20.0  // Distance to detect front obstacle
@@ -101,7 +101,7 @@ static bool check_side_obstacle(int side) {
 
 // Function to calculate weighted position from line sensors
 double calculate_line_position(int* sensor_states) {
-    const double weights[] = {-3.2, -1.8, 0.0, 1.8, 3.2};
+    const double weights[] = {-3.0, -1.5, 0.0, 1.5, 3.0};
     double weighted_sum = 0;
     int active_sensors = 0;
     
