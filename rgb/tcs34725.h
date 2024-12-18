@@ -46,7 +46,7 @@
 #define SATURATION_THRESHOLD 0.2f
 
 // LED and Reading Configuration
-#define LED_PIN 4
+#define LED_PIN 6
 #define NUM_READINGS 5
 #define DELAY_US 100000
 
