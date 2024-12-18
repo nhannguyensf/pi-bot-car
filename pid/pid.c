@@ -141,18 +141,17 @@ void pid_control() {
     switch (current_state) {
         // Check if no line detected
             read_line_sensors(sensor_states);
-            bool line_detected = false;
+            
+            // If no line detected, skip this loop iteration
+            int active_sensors = 0;
             for (int i = 0; i < NUM_SENSORS; i++) {
-                if (sensor_states[i]) {
-                    line_detected = true;
-                    break;
+                if (sensor_states[i] == 1) {
+                    active_sensors++;
                 }
             }
-
-            // If no line detected, skip the loop
-            if (!line_detected) {
+            if (active_sensors == 0) {
                 printf("No line detected, skipping loop...\n");
-                return;
+                return;  // Skip the rest of the loop if no line is detected
             }
 
             // Check for obstacles periodically
