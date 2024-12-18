@@ -7,22 +7,22 @@
 #include <time.h>
 
 // PID constants
-#define KP 50
-#define KI 1.0
-#define KD 1.0
+#define KP 50.0  
+#define KI 1  
+#define KD 1  
 
 // Control limits
-#define MAX_CONTROL 200
+#define MAX_CONTROL 100
 #define BASE_SPEED 60
 
 // Object detection thresholds
-#define FRONT_THRESHOLD 20.0  // Distance to detect front obstacle
+#define FRONT_THRESHOLD 30.0  // Distance to detect front obstacle
 #define SIDE_THRESHOLD 25.0   // Distance to detect side obstacle
 #define TURN_SPEED 15        // Speed for turning
 #define AVOID_SPEED 50       // Speed while avoiding obstacle
 
 // Turn timing (microseconds)
-#define TURN_90_TIME 7500000  // 750ms for 90-degree turn at speed 15
+#define TURN_90_TIME 1500000  // 750ms for 90-degree turn at speed 15
 
 // Robot states
 typedef enum {
@@ -35,6 +35,7 @@ typedef enum {
     ALIGN_STRAIGHT,
     MOVE_FORWARD,
     TURNING_LEFT,
+    MOVE_FORWARD_MORE,
     FIND_LINE
 } RobotState;
 
@@ -101,7 +102,7 @@ static bool check_side_obstacle(int side) {
 
 // Function to calculate weighted position from line sensors
 double calculate_line_position(int* sensor_states) {
-    const double weights[] = {-3.0, -2, 0.0, 2, 3.0};
+    const double weights[] = {-3.0, -2.0, 0.0, 2.0, 3.0};
     double weighted_sum = 0;
     int active_sensors = 0;
     
@@ -153,6 +154,19 @@ void pid_control() {
 
             // Normal line following
             read_line_sensors(sensor_states);
+
+            // If no line detected, skip this loop iteration
+            int active_sensors = 0;
+            for (int i = 0; i < NUM_SENSORS; i++) {
+                if (sensor_states[i] == 1) {
+                    active_sensors++;
+                }
+            }
+            if (active_sensors == 0) {
+                printf("No line detected, skipping loop...\n");
+                return;  // Skip the rest of the loop if no line is detected
+            }
+
             double error = calculate_line_position(sensor_states);
             integral += error;
             double derivative = error - last_error;
@@ -212,7 +226,7 @@ void pid_control() {
         case MOVE_FORWARD_SHORT:
             Motor_Run(MOTORA, AVOID_SPEED);
             Motor_Run(MOTORB, AVOID_SPEED);
-            usleep(500000);  // Move forward for 0.5 seconds
+            usleep(1500000);  // Move forward for 0.5 seconds
             stop_motors();
             printf("Checking left side\n");
             current_state = CHECK_LEFT;
@@ -235,6 +249,7 @@ void pid_control() {
                 start_turn_timer();
                 Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
                 Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
+                // usleep(1000000);  // Move forward for 1 second
             } else if (is_turn_complete()) {
                 printf("Aligned straight, moving forward\n");
                 stop_motors();
@@ -246,13 +261,29 @@ void pid_control() {
         case MOVE_FORWARD:
             Motor_Run(MOTORA, AVOID_SPEED);
             Motor_Run(MOTORB, AVOID_SPEED);
-            usleep(1000000);  // Move forward for 1 second
+            usleep(1800000);  // Move forward for 1 second
             stop_motors();
             
             if (!check_side_obstacle(0)) {  // Check left side again
                 printf("Left side clear, starting full left turn\n");
                 turn_started = false;
                 current_state = TURNING_LEFT;
+            } else {
+                printf("Left side blocked, continuing line following\n");
+                current_state = FOLLOWING_LINE;
+            }
+            break;
+
+        case MOVE_FORWARD_MORE:
+            Motor_Run(MOTORA, AVOID_SPEED);
+            Motor_Run(MOTORB, AVOID_SPEED);
+            usleep(1800000);  // Move forward for 1 second
+            stop_motors();
+            
+            if (!check_side_obstacle(0)) {  // Check left side again
+                printf("Left side clear, starting full left turn\n");
+                turn_started = false;
+                current_state = FOLLOWING_LINE;
             } else {
                 printf("Left side blocked, continuing line following\n");
                 current_state = FOLLOWING_LINE;
@@ -268,7 +299,7 @@ void pid_control() {
             } else if (is_turn_complete()) {
                 printf("Left turn complete, searching for line\n");
                 stop_motors();
-                current_state = FIND_LINE;
+                current_state = MOVE_FORWARD_MORE;
             }
             break;
 
