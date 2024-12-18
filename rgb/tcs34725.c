@@ -48,13 +48,16 @@ int init_TCS34725(const char *integration_time_str, const char *gain_str)
         return -1;
     }
 
+     printf("Initializing TCS34725 sensor HANDLER...\n");
     int handle = i2cOpen(1, TCS34725_ADDR, 0);
+    printf("After I2C open, handle: %d\n", handle);
     if (handle < 0){
         printf("Failed to open I2C. Error: %d\n", handle);
         return -1;
     }
 
     uint8_t enable = TCS34725_PON | TCS34725_AEN;
+    printf("Writing ENABLE register...\n");
     if (i2cWriteByteData(handle, TCS34725_CMD | TCS34725_ENABLE, enable) < 0){
         printf("Failed to enable sensor.\n");
         i2cClose(handle);

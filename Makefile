@@ -36,7 +36,7 @@ LIBS = \
 TARGET = car
 
 # Default target
-all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/echoSensor $(BIN_DIR)/pid $(TARGET)
+all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/echoSensor $(BIN_DIR)/pid $(BIN_DIR)/rgb $(TARGET)
 
 # Create necessary directories
 $(BIN_DIR):
