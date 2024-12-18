@@ -277,7 +277,7 @@ void pid_control() {
         case MOVE_FORWARD_MORE:
             Motor_Run(MOTORA, AVOID_SPEED);
             Motor_Run(MOTORB, AVOID_SPEED);
-            usleep(1800000);  // Move forward for 1 second
+            usleep(2000000);  // Move forward for 1 second
             stop_motors();
             
             if (!check_side_obstacle(0)) {  // Check left side again
