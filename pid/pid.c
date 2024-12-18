@@ -7,9 +7,9 @@
 #include <time.h>
 
 // PID constants
-#define KP 35
-#define KI 0.4
-#define KD 0
+#define KP 50
+#define KI 1.0
+#define KD 1.0
 
 // Control limits
 #define MAX_CONTROL 200
@@ -101,7 +101,7 @@ static bool check_side_obstacle(int side) {
 
 // Function to calculate weighted position from line sensors
 double calculate_line_position(int* sensor_states) {
-    const double weights[] = {-3.0, -1.5, 0.0, 1.5, 3.0};
+    const double weights[] = {-3.0, -2, 0.0, 2, 3.0};
     double weighted_sum = 0;
     int active_sensors = 0;
     
