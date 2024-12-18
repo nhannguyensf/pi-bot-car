@@ -20,22 +20,17 @@
 #define SIDE_THRESHOLD 25.0   // Distance to detect side obstacle
 #define TURN_SPEED 15        // Speed for turning
 #define AVOID_SPEED 50       // Speed while avoiding obstacle
+#define ARC_INNER_SPEED 30   // Speed for inner wheel during arc turn
+#define ARC_OUTER_SPEED 80   // Speed for outer wheel during arc turn
 
 // Turn timing (microseconds)
-#define TURN_90_TIME 7500000  // 750ms for 90-degree turn at speed 15
+#define TURN_90_TIME 12500000  // 750ms for 90-degree turn at speed 15
+#define ARC_TURN_TIME 2000000 // 1.5s for arc turn
 
 // Robot states
 typedef enum {
     FOLLOWING_LINE,
-    STOPPING,
-    TURNING_RIGHT,
-    CHECK_RIGHT,
-    MOVE_FORWARD_SHORT,
-    CHECK_LEFT,
-    ALIGN_STRAIGHT,
-    MOVE_FORWARD,
-    TURNING_LEFT,
-    FIND_LINE
+    STOPPING
 } RobotState;
 
 static RobotState current_state = FOLLOWING_LINE;
@@ -178,109 +173,7 @@ void pid_control() {
             break;
 
         case STOPPING:
-            printf("Robot stopped. Starting right turn...\n");
-            usleep(500000);  // Wait for 0.5 seconds
-            turn_started = false;
-            current_state = TURNING_RIGHT;
-            break;
-
-        case TURNING_RIGHT:
-            if (!turn_started) {
-                printf("Starting 90-degree right turn\n");
-                start_turn_timer();
-                Motor_Run(MOTORA, TURN_SPEED);    // Left motor forward
-                Motor_Run(MOTORB, -TURN_SPEED);   // Right motor reverse
-            } else if (is_turn_complete()) {
-                printf("Right turn complete, checking right side\n");
-                stop_motors();
-                turn_started = false;
-                current_state = CHECK_RIGHT;
-            }
-            break;
-
-        case CHECK_RIGHT:
-            if (check_side_obstacle(2)) {  // Check right sensor
-                printf("Right side blocked, cannot proceed\n");
-                // TODO: Implement alternative strategy
-                current_state = TURNING_LEFT;
-            } else {
-                printf("Right side clear, moving forward\n");
-                current_state = MOVE_FORWARD_SHORT;
-            }
-            break;
-
-        case MOVE_FORWARD_SHORT:
-            Motor_Run(MOTORA, AVOID_SPEED);
-            Motor_Run(MOTORB, AVOID_SPEED);
-            usleep(500000);  // Move forward for 0.5 seconds
-            stop_motors();
-            printf("Checking left side\n");
-            current_state = CHECK_LEFT;
-            break;
-
-        case CHECK_LEFT:
-            if (check_side_obstacle(0)) {  // Check left sensor
-                printf("Left side blocked, continuing forward\n");
-                current_state = ALIGN_STRAIGHT;
-            } else {
-                printf("Left side clear, turning to face straight\n");
-                turn_started = false;
-                current_state = ALIGN_STRAIGHT;
-            }
-            break;
-
-        case ALIGN_STRAIGHT:
-            if (!turn_started) {
-                printf("Aligning straight\n");
-                start_turn_timer();
-                Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
-                Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
-            } else if (is_turn_complete()) {
-                printf("Aligned straight, moving forward\n");
-                stop_motors();
-                turn_started = false;
-                current_state = MOVE_FORWARD;
-            }
-            break;
-
-        case MOVE_FORWARD:
-            Motor_Run(MOTORA, AVOID_SPEED);
-            Motor_Run(MOTORB, AVOID_SPEED);
-            usleep(1000000);  // Move forward for 1 second
-            stop_motors();
-            
-            if (!check_side_obstacle(0)) {  // Check left side again
-                printf("Left side clear, starting full left turn\n");
-                turn_started = false;
-                current_state = TURNING_LEFT;
-            } else {
-                printf("Left side blocked, continuing line following\n");
-                current_state = FOLLOWING_LINE;
-            }
-            break;
-
-        case TURNING_LEFT:
-            if (!turn_started) {
-                printf("Starting full left turn\n");
-                start_turn_timer();
-                Motor_Run(MOTORA, -TURN_SPEED);   // Left motor reverse
-                Motor_Run(MOTORB, TURN_SPEED);    // Right motor forward
-            } else if (is_turn_complete()) {
-                printf("Left turn complete, searching for line\n");
-                stop_motors();
-                current_state = FIND_LINE;
-            }
-            break;
-
-        case FIND_LINE:
-            if (check_for_line()) {
-                printf("Line found! Resuming line following\n");
-                current_state = FOLLOWING_LINE;
-            } else {
-                // Continue turning slowly until line is found
-                Motor_Run(MOTORA, -TURN_SPEED/2);
-                Motor_Run(MOTORB, TURN_SPEED/2);
-            }
+            // Just stay stopped
             break;
     }
 }
