@@ -129,7 +129,7 @@ static void* pollSensorsSequentially(void* arg) {
             sensorDistances[sensor_idx] = distance;
             pthread_mutex_unlock(&distanceMutex);
             
-            usleep(100000); // 100ms delay between readings
+            usleep(20000); // 20ms delay between readings
         }
         
         // Set unused sensors to inactive state
@@ -138,7 +138,7 @@ static void* pollSensorsSequentially(void* arg) {
         // sensorDistances[3] = -1;
         pthread_mutex_unlock(&distanceMutex);
         
-        usleep(50000); // Additional delay between polling cycles
+        usleep(10000); // 10ms additional delay
     }
     return NULL;
 }

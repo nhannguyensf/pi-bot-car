@@ -18,5 +18,6 @@
 #include "motor/MotorDriver.h"
 #include "encoder/ls7336r.h"
 #include "encoder/motor.h"
+#include "rgb/tcs34725.h"
 
 #endif

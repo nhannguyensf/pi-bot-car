@@ -12,6 +12,7 @@ SRC = \
     line-sensor/line_sensor.c \
     echoSensor/echoSensor.c \
     pid/pid.c \
+    rgb/tcs34725.c \
     car.c
 
 # Directory structure
@@ -24,7 +25,8 @@ INCLUDES = \
     -I./encoder \
     -I./line-sensor \
     -I./echoSensor \
-    -I./pid
+    -I./pid \
+    -I./rgb
 
 # Libraries
 LIBS = \
@@ -34,7 +36,7 @@ LIBS = \
 TARGET = car
 
 # Default target
-all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/echoSensor $(BIN_DIR)/pid $(TARGET)
+all: $(BIN_DIR)/motor $(BIN_DIR)/encoder $(BIN_DIR)/line-sensor $(BIN_DIR)/echoSensor $(BIN_DIR)/pid $(BIN_DIR)/rgb $(TARGET)
 
 # Create necessary directories
 $(BIN_DIR):
@@ -54,6 +56,9 @@ $(BIN_DIR)/echoSensor:
 
 $(BIN_DIR)/pid:
 	mkdir -p $(BIN_DIR)/pid
+
+$(BIN_DIR)/rgb:
+	mkdir -p $(BIN_DIR)/rgb
 
 # Link object files into the final binary
 $(TARGET): $(OBJ)

@@ -12,6 +12,7 @@
 #include <signal.h>
 
 volatile sig_atomic_t stop = 0; // Flag to indicate program termination (ctrl + c)
+static int color_result = 0;
 
 // Signal handler to stop the motor safely and set stop flag
 void Handler(int signo)
@@ -40,17 +41,36 @@ int main(void) {
     initializeEncoder(SPI0_CE0, "Motor A");
     initializeEncoder(SPI0_CE1, "Motor B");
 
+    /*
+    printf("Initializing TCS34725 sensor...\n");
+    int tcs34725 = init_TCS34725("101ms", "60X");
+    if (tcs34725 < 0) {
+        gpioTerminate();
+        return EXIT_FAILURE;
+    }
+    */
+
     printf("All systems initialized. Starting control loop...\n");
 
     // Main control loop
     while(!stop) {
         pid_control();
-        usleep(10000); // 10ms delay between iterations
+
+        /*
+        if (detect_and_adjust_led(tcs34725, &color_result) < 0) {
+            stop = 1;
+        }
+
+        if(!color_result) {
+            stop = 1;
+        }
+        */
     }
 
     // Cleanup
     printf("\nCleaning up...\n");
     stopMotors();
+//    i2cClose(tcs34725);
     cleanupEchoSensors();
     gpioTerminate();
     DEV_ModuleExit();
