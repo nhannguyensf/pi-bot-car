@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : motor.c
+Description:
+This file contains the motor system initialization and encoder reading functions for the robot car project.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include "line_sensor.h"
 #include <bcm2835.h>
 #include <stdio.h>

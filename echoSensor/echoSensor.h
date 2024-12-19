@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : echoSensor.h
+Description:
+This file is the header file for the echoSensor.c file. It includes all the necessary libraries and headers for the echo sensor.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #ifndef ECHO_SENSOR_H
 #define ECHO_SENSOR_H
 

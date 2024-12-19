@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : motor.h
+Description:
+This file is the header file for the motor.c file. It includes all the necessary declarations and libraries for the motor system.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #ifndef TCS34725_H
 #define TCS34725_H
 

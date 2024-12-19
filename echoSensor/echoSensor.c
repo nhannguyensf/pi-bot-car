@@ -1,3 +1,21 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : echoSensor.c
+Description:
+This file is the echo sensor file for the robot car project. 
+It initializes the echo sensors and provides functions to read the distances from the sensors.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include <stdio.h>
 #include <pigpio.h>
 #include <time.h>
@@ -5,9 +23,9 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-// GPIO Pins for 5 sensors
+// Number of sensors
 #define NUM_SENSORS 3
-
+// Structure to store sensor pins and ID
 typedef struct {
     int trig;
     int echo;
@@ -16,9 +34,9 @@ typedef struct {
 
 // Array of sensor pins
 static const SensorPins sensorPins[NUM_SENSORS] = {
-    {4, 5, 0},     // Sensor 0
-    {26, 12, 1},   // Sensor 2 (now index 1)
-    {25, 16, 2}    // Sensor 4 (now index 2)
+    {4, 5, 0},     // Sensor 0 (left)
+    {26, 12, 1},   // Sensor 1 (front)
+    {25, 16, 2}    // Sensor 2 (right)
 };
 
 // Global variables
@@ -91,7 +109,7 @@ static double getDistance(const SensorPins* sensor) {
     usleep(10);
     gpioWrite(sensor->trig, 0);
 
-    // Wait for Echo to go high (with shorter timeout)
+    // Wait for Echo to go high 
     int timeout = 0;
     while(gpioRead(sensor->echo) == 0 && timeout < 10000) {  
         timeout++;
@@ -101,7 +119,7 @@ static double getDistance(const SensorPins* sensor) {
 
     startTick = gpioTick();
 
-    // Wait for Echo to go low (with shorter timeout)
+    // Wait for Echo to go low 
     timeout = 0;
     while(gpioRead(sensor->echo) == 1 && timeout < 10000) {  
         timeout++;
@@ -116,10 +134,11 @@ static double getDistance(const SensorPins* sensor) {
     return distance;
 }
 
-// Poll sensors sequentially
+// Poll sensors 
 static void* pollSensorsSequentially(void* arg) {
     while (isRunning) {
-        // Only poll sensors 0, 2, and 4
+        // Poll sensors sequentially this was done because we initially had 5 sensors
+        // but it was too much of a bottleneck so we only use 3 sensors now
         int sensors_to_poll[] = {0, 1, 2};
         for (int i = 0; i < 3; i++) {
             int sensor_idx = sensors_to_poll[i];
@@ -131,18 +150,13 @@ static void* pollSensorsSequentially(void* arg) {
             
             usleep(20000); // 20ms delay between readings
         }
-        
-        // Set unused sensors to inactive state
         pthread_mutex_lock(&distanceMutex);
-        // sensorDistances[1] = -1;
-        // sensorDistances[3] = -1;
         pthread_mutex_unlock(&distanceMutex);
-        
-        usleep(10000); // 10ms additional delay
+        usleep(10000); 
     }
     return NULL;
 }
-
+// Print sensor distances
 void printSensorDistances() {
     double distances[NUM_SENSORS];
     if (getCurrentDistances(distances) == 0) {

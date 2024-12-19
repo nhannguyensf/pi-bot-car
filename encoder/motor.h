@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : motor.h
+Description:
+This file contains the motor system initialization and encoder reading functions for the robot car project.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #ifndef MOTOR_H
 #define MOTOR_H
 

@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : echotestSensor.c
+Description:
+This file is the test file for the echo sensor system. It initializes the echo sensors and reads the distances from the sensors in a loop.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include <stdio.h>
 #include <pigpio.h>
 #include <time.h>

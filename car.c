@@ -1,3 +1,24 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : car.c
+Description:
+This file is the main file for the robot car project. 
+It initializes all the systems, including the motor system, echo sensors, encoders, and the TCS34725 sensor. 
+It then enters the main control loop, which uses a PID controller to control the car's movement. 
+The control loop also uses the TCS34725 sensor to detect the color of the LED and adjust the car's movement accordingly. 
+The program exits when the user presses Ctrl+C, and all systems are cleaned up.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include "car.h"
 #include <fcntl.h>
 #include <poll.h>
@@ -8,16 +29,16 @@
 #include <string.h>
 #include <pthread.h>
 #include <pigpio.h>
-#include <bcm2835.h> // Include bcm2835 library for SPI
+#include <bcm2835.h>
 #include <signal.h>
 
-volatile sig_atomic_t stop = 0; // Flag to indicate program termination (ctrl + c)
+volatile sig_atomic_t stop = 0; 
 static int color_result = 0;
 
 // Signal handler to stop the motor safely and set stop flag
 void Handler(int signo)
 {
-    // System Exit
+    //Ensure the motor stops
     printf("\r\nHandler: Motor Stop\r\n");
     stop = 1;
 }
@@ -36,7 +57,7 @@ int main(void) {
 
     // Set up signal handler
     signal(SIGINT, Handler);
-
+    // Set up the encoder
     printf("Initializing encoders...\n");
     initializeEncoder(SPI0_CE0, "Motor A");
     initializeEncoder(SPI0_CE1, "Motor B");
@@ -49,13 +70,14 @@ int main(void) {
         return EXIT_FAILURE;
     }
     */
-
+    //Begin the robot car's main operational loop, where it reacts to sensor inputs in real-time.
     printf("All systems initialized. Starting control loop...\n");
 
     // Main control loop
     while(!stop) {
+        // Use PID control to adjust the car's movement based on sensor feedback.
         pid_control();
-
+        // Use the TCS34725 sensor to detect the color of the LED and stop the car.
         /*
         if (detect_and_adjust_led(tcs34725, &color_result) < 0) {
             stop = 1;
@@ -67,7 +89,7 @@ int main(void) {
         */
     }
 
-    // Cleanup
+    // Once the program exits, ensure all resources are safely released and motors are stopped.
     printf("\nCleaning up...\n");
     stopMotors();
 //    i2cClose(tcs34725);

@@ -1,3 +1,21 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : MotorDriver.c
+Description:
+This file contains the motor driver functions for the robot car project. 
+It includes functions to initialize the motor system, run the motors, and stop the motors.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include "MotorDriver.h"
 #include "Debug.h"
 
@@ -11,8 +29,7 @@
  * @code
  * Motor_Run(FORWARD, 50);
  */
-
-
+//Initialize the motor system
 void Motor_Init(void)
 {   
     if (DEV_ModuleInit() != 0) {
@@ -31,7 +48,7 @@ void Motor_Init(void)
     printf("Motor system initialized successfully.\n");
 
 }
-
+// Run the motor with specified speed and motor
 void Motor_Run(UBYTE motor, int speed)
 {
     DIR dir;
@@ -81,7 +98,7 @@ void Motor_Run(UBYTE motor, int speed)
         }
     }
 }
-
+// Stop the motor
 void Motor_Stop(UBYTE motor)
 {
     if (motor == MOTORA)
@@ -93,7 +110,7 @@ void Motor_Stop(UBYTE motor)
         PCA9685_SetPwmDutyCycle(PWMB, 0);
     }
 }
-
+// Stop all motors
 void Motor_Stop_All(void) {
     Motor_Stop(MOTORA);
     Motor_Stop(MOTORB);

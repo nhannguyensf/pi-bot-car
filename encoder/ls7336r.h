@@ -1,3 +1,15 @@
+/***********************************************************
+* Class: CSC-615-01 Spring 2022
+* Name: Robert Bierman
+* Student ID: 
+* GitHub ID: bierman
+* Project: CSC615 Motor Encoder Board with LS7366R
+*
+* File: ls7336r.h
+*
+* Description: This file contains routine and a testbed for
+*    using the LS7336 Quadrature Encode chip.
+***********************************************************/
 #ifndef LS7336R_H
 #define LS7336R_H
 

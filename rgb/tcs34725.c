@@ -1,3 +1,20 @@
+/**
+Class         : CSC-615-01 - Embedded Linux - Fall 2024
+Team Name     : Wayno
+Github        : nhannguyensf
+Project       : Final Assignment - Robot Car
+File          : tcs34725.c
+Description:
+This file contains the functions to initialize the TCS34725 sensor, read color data, and detect colors using the sensor data.
+*
+Team Members:
+Kiran Poudel
+Nhan Nguyen
+Yuvraj Gupta
+Fernando Abel Malca Luque
+
+*
+**/ 
 #include "tcs34725.h"
 #include <stdio.h>
 #include <pigpio.h>
